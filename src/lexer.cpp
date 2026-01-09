@@ -24,6 +24,8 @@ Lexer::Lexer(const std::string& src, ErrorReporter& errReporter) :
     keywords["WHILE"] = TOK_WHILE;
     keywords["IF"] = TOK_IF;
     keywords["THEN"] = TOK_THEN;
+    keywords["ELSE"] = TOK_ELSE;
+    keywords["IN"] = TOK_IN;
     keywords["FOR"] = TOK_FOR;
 
     keywords["TRUE"] = TOK_TRUE;

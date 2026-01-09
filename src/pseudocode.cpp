@@ -1,4 +1,5 @@
 #include "pseudocode.hpp"
+#include "ast_printer.hpp"
 
 /**
  * Read the entire contents of a file into a string
@@ -57,6 +58,13 @@ int Pseudocode::runFile(const std::string& path) {
         // Tokenize the source code
         std::vector<Token> tokens = lexer.scanTokens();
         printTokenTable(tokens);
+
+        // Parse tokens
+        stage = InterpreterStage::Parsing;
+        Parser parser(tokens, source, reporter);
+
+        ASTPrinter printer;
+        printer.print(parser.parse());
     } catch (const std::exception& e) {
         return 1;
     }
@@ -82,10 +90,17 @@ int Pseudocode::runRepl() {
 
         try {
             // Tokenize the input line
+            stage = InterpreterStage::Lexing;
             ErrorReporter reporter(stage);
             Lexer lexer(line, reporter);
             std::vector<Token> tokens = lexer.scanTokens();
-            printTokenTable(tokens);
+            // printTokenTable(tokens);
+
+            // Parse tokens
+            stage = InterpreterStage::Parsing;
+            Parser parser(tokens, line, reporter);
+            auto statements = parser.parse();
+
         } catch (const std::exception& e) {
             // Display error but continue REPL
             std::cerr << e.what() << std::endl;

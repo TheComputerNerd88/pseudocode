@@ -30,6 +30,7 @@ enum TokenType {
     TOK_NEW, TOK_END,
     TOK_IF, TOK_THEN, TOK_ELSE,
     TOK_WHILE, TOK_FOR,
+    TOK_IN,
     TOK_PRINT,
     
     // === Operators ===
@@ -87,6 +88,8 @@ struct Token {
             case TOK_IF: return "KEYWORD(IF)";
             case TOK_END: return "KEYWORD(END)";
             case TOK_THEN: return "KEYWORD(THEN)";
+            case TOK_IN: return "KEYWORD(IN)";
+            case TOK_ELSE: return "KEYWORD(ELSE)";
             case TOK_WHILE: return "KEYWORD(WHILE)";
             case TOK_FOR: return "KEYWORD(FOR)";
             case TOK_PRINT: return "KEYWORD(PRINT)";

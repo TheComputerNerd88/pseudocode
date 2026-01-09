@@ -8,9 +8,8 @@
 #include <iomanip>
 
 #include "lexer.hpp"
+#include "parser.hpp"
 #include "errors.hpp"
-#include "interpreter.hpp"
-
 /**
  * Main Pseudocode interpreter class
  * Provides both file execution and interactive REPL modes
@@ -31,7 +30,6 @@ public:
      * @return Always returns 0
      */
     static int runRepl();
-
 private:
     /**
      * Read entire file contents into a string
