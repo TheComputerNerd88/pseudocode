@@ -57,14 +57,15 @@ int Pseudocode::runFile(const std::string& path) {
 
         // Tokenize the source code
         std::vector<Token> tokens = lexer.scanTokens();
-        printTokenTable(tokens);
 
         // Parse tokens
         stage = InterpreterStage::Parsing;
         Parser parser(tokens, source, reporter);
 
-        ASTPrinter printer;
-        printer.print(parser.parse());
+        // Interpret the AST
+        stage = InterpreterStage::Runtime;
+        Interpreter interpreter = Interpreter(reporter);
+        interpreter.interpret(parser.parse());
     } catch (const std::exception& e) {
         return 1;
     }
@@ -75,13 +76,19 @@ int Pseudocode::runFile(const std::string& path) {
 /**
  * Run an interactive REPL (Read-Eval-Print-Loop)
  * Allows users to input pseudocode lines interactively
- * Each line is tokenized and displayed as a table
+ * Each line is tokenized, parsed, and executed
  * @return Always returns 0
  */
 int Pseudocode::runRepl() {
     InterpreterStage stage = InterpreterStage::Lexing;
+    ErrorReporter reporter(stage);
 
     std::cout << "Interactive SCSA Pseudocode Interpreter" << std::endl;
+    std::cout << "Type 'exit' to quit" << std::endl;
+
+    // Create a single interpreter instance for the entire session
+    Interpreter interpreter(reporter);
+    std::vector<StmtPtr> statements;
 
     std::string line;
     while (true) {
@@ -89,21 +96,22 @@ int Pseudocode::runRepl() {
         std::cout << "[SCSA] >> " << std::flush;
         if (!std::getline(std::cin, line)) break;
         if (line.empty()) continue;
+        if (line == "exit") break;
 
         try {
             // Tokenize the input line
             stage = InterpreterStage::Lexing;
-            ErrorReporter reporter(stage);
             Lexer lexer(line, reporter);
             std::vector<Token> tokens = lexer.scanTokens();
-            // printTokenTable(tokens);
 
             // Parse tokens
             stage = InterpreterStage::Parsing;
             Parser parser(tokens, line, reporter);
+            std::vector<StmtPtr> parsed = parser.parse();
 
-            ASTPrinter printer;
-            printer.print(parser.parse());
+            // Execute parsed statements
+            stage = InterpreterStage::Runtime;
+            interpreter.interpret(parsed);
 
         } catch (const std::exception& e) {
             // Display error without crashing the REPL

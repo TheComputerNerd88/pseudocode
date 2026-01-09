@@ -1,0 +1,12 @@
+FUNCTION freefall(time)
+    g = 9.81
+    # Formula: 0.5 * g * t^2
+    distance = 0.5 * g * (time * time)
+    RETURN distance
+END freefall
+
+time_fallen = 4.5
+dist = freefall(time_fallen)
+
+PRINT(time_fallen)
+PRINT(dist)

@@ -1,5 +1,5 @@
-FUNCTION BubbleSort(array_to_sort)
-    last = array_to_sort.length - 1
+FUNCTION BubbleSort(array_to_sort, length)
+    last = length - 1
     swapped = TRUE
     WHILE swapped
         swapped = FALSE
@@ -19,4 +19,4 @@ FUNCTION BubbleSort(array_to_sort)
 END BubbleSort
 
 MyList = [3, 1, 2]
-PRINT(BubbleSort(MyList))
+PRINT(BubbleSort(MyList, 3))

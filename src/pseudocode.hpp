@@ -9,7 +9,9 @@
 
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "tree-walker.hpp"
 #include "errors.hpp"
+
 /**
  * Main Pseudocode interpreter class
  * Provides both file execution and interactive REPL modes

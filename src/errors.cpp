@@ -26,9 +26,10 @@ ErrorReporter::ErrorReporter(InterpreterStage& stageRef) : stage(stageRef) {}
  */
 std::string ErrorReporter::getErrorLabel(ErrorType type) {
     switch (type) {
-        case ErrorType::Syntax: return "Syntax Error";
-        case ErrorType::Type:   return "Type Error";
-        default:                return "Error";
+        case ErrorType::Syntax:     return "Syntax Error";
+        case ErrorType::Type:       return "Type Error";
+        case ErrorType::Runtime:    return "Runtime Error";
+        default:                    return "Error";
     }
 }
 
@@ -84,7 +85,7 @@ void ErrorReporter::report(ErrorType type, size_t line, size_t column,
     std::cerr << C_RED << "^" << C_RESET << std::endl;
 
     // Print a message from the SCSA since the user has clearly failed
-    printAtarMessage();
+    // printAtarMessage();
 
     // Throw exception to halt execution
     throw std::runtime_error("");

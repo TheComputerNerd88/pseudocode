@@ -26,3 +26,6 @@ Methods:
         RETURN hunger > 0
     END is_hungry
 END Animal
+
+bruh = NEW Animal()
+bruh.eat("fish")

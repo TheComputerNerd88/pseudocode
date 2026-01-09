@@ -1,0 +1,4 @@
+FUNCTION why()
+END why
+
+PRINT(why)

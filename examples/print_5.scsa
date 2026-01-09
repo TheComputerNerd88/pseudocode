@@ -1,0 +1,3 @@
+variable = 5
+PRINT("This is a literal")
+PRINT(variable)

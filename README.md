@@ -3,13 +3,16 @@ Pseudocode, based on the Western Australian ATAR Computer Science "Pseudocode" s
 Well guess what?
 
 # Features
-- handwritten Lexer
-
-# Planned features
+- Handwritten Lexer
 - Pratt Parser
 - Simple tree walker
+
+# WIP
+- Object Oriented Programming✨
+    - This was a new, painful, stupid addition to the SCSA pseudocode "standard", when they decided that their ancient Pascal based pseudocode had to appeal to the super new (30 year old) trendy OOP
+- Lists appending
+
+# Planned features
 - Bytecode VM
 - Garbage Collector
 
-- Object Oriented Programming✨
-    - This was a new, painful, stupid addition to the SCSA pseudocode "standard", when they decided that their ancient Pascal based pseudocode had to appeal to the super new (30 year old) trendy OOP
