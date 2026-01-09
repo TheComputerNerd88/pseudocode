@@ -12,10 +12,13 @@ void printAtarMessage() {
 
 /**
  * ErrorReporter Constructor
- * Stores a reference to the current interpreter stage for error reporting
+ * Stores a reference to the current interpreter stage, filename, and source code for error reporting
  * @param stageRef Reference to the current InterpreterStage
+ * @param file The source filename being processed
+ * @param source The full source code for context generation
  */
-ErrorReporter::ErrorReporter(InterpreterStage &stageRef) : stage(stageRef) {
+ErrorReporter::ErrorReporter(InterpreterStage &stageRef, const std::string &file, const std::string &source) 
+    : stage(stageRef), filename(file), sourceCode(source) {
 }
 
 /**
@@ -54,6 +57,46 @@ std::string ErrorReporter::getStageLabel() {
 }
 
 /**
+ * Extract a specific line from the source code
+ * @param lineNum The 1-based line number to extract
+ * @return The source code line, or empty string if out of range
+ */
+std::string ErrorReporter::getSourceLine(size_t lineNum) {
+    if (sourceCode.empty() || lineNum < 1) {
+        return "";
+    }
+
+    size_t currentLine = 1;
+    size_t lineStart = 0;
+
+    for (size_t i = 0; i < sourceCode.length(); i++) {
+        if (i > 0 && sourceCode[i - 1] == '\n') {
+            currentLine++;
+            if (currentLine == lineNum) {
+                lineStart = i;
+                break;
+            }
+        } else if (i == 0 && lineNum == 1) {
+            lineStart = 0;
+            break;
+        }
+    }
+
+    // If we never found the line, return empty
+    if (currentLine != lineNum && lineNum != 1) {
+        return "";
+    }
+
+    // Find the end of this line
+    size_t lineEnd = lineStart;
+    while (lineEnd < sourceCode.length() && sourceCode[lineEnd] != '\n') {
+        lineEnd++;
+    }
+
+    return sourceCode.substr(lineStart, lineEnd - lineStart);
+}
+
+/**
  * Format and display a complete error message with context
  * Shows the error stage, location, line content, and error pointer
  * @param type The type of error (Syntax, Type, etc.)
@@ -61,38 +104,101 @@ std::string ErrorReporter::getStageLabel() {
  * @param column The column position where the error occurred
  * @param message The error message to display
  * @param lineSource The actual source code line containing the error
+ * @param length The length of the erroneous token (for underlining)
+ */
+/**
+ * Format and display a complete error message with context
+ * Shows the error stage, location, line content, surrounding lines, and error pointer
  */
 void ErrorReporter::report(ErrorType type, size_t line, size_t column, const std::string &message,
-                           const std::string &lineSource) {
+                           size_t length) {
     // Print which stage the interpreter is in
     std::string stageLabel = getStageLabel();
-    std::cerr << C_RED << "[An error occurred during stage: '" << stageLabel << "']" << std::endl;
+    std::cerr << C_RED << "[An error has occurred during the stage: '" << stageLabel << "']"
+              << std::endl;
 
-    // Print error message with location information
-    std::string label = getErrorLabel(type);
-    std::cerr << "[Line " << C_BLUE << line << ":" << column + 1 << C_RED << "] " << label << ": "
-              << message << C_RESET << std::endl;
+    // Get the error line
+    std::string errorLine = getSourceLine(line);
+    
+    // Create coordinate string
+    std::string coords = std::to_string(line) + ":" + std::to_string(column + 1);
+    std::string separator = " │ "; 
+    size_t gutterWidth = coords.length() + 3;
 
-    // Print the problematic line of code
-    std::cerr << C_RED << ">>  " << C_RESET << lineSource << std::endl;
+    // Print filename (Aligned)
+    if (!filename.empty()) {
+        std::string indent(gutterWidth - 2, ' ');
+        std::cerr << C_BLUE << indent << "┌─ " << filename << C_RESET << std::endl;
+    }
 
-    // Generate a pointer string to indicate the exact error position
-    std::cerr << "    ";
+    // Print line before (if it exists)
+    if (line > 1) {
+        std::string prevLine = getSourceLine(line - 1);
+        if (!prevLine.empty()) {
+            std::string prevCoords = std::to_string(line - 1);
+            std::cerr << C_BLUE << prevCoords;
+            // Pad to match the width of the error line number
+            for (size_t i = prevCoords.length(); i < coords.length(); i++) {
+                std::cerr << " ";
+            }
+            std::cerr << separator << C_RESET << C_GRAY << prevLine << C_RESET << std::endl;
+        }
+    }
 
-    // Account for tab characters when positioning the error pointer
+    // Print the error line with highlighting
+    std::cerr << C_BLUE << coords << separator << C_RESET;
+
+    // Print the line up to the error
+    std::cerr << errorLine.substr(0, column);
+
+    // Print the erroneous token in red
+    std::cerr << C_RED << errorLine.substr(column, length) << C_RESET;
+
+    // Print the rest of the line
+    if (column + length < errorLine.length()) {
+        std::cerr << errorLine.substr(column + length);
+    }
+    std::cerr << std::endl;
+
+    // Print line after (if it exists)
+    if (!getSourceLine(line + 1).empty()) {
+        std::string nextLine = getSourceLine(line + 1);
+        std::string nextCoords = std::to_string(line + 1);
+        std::cerr << C_GRAY << nextCoords;
+        // Pad to match the width of the error line number
+        for (size_t i = nextCoords.length(); i < coords.length(); i++) {
+            std::cerr << " ";
+        }
+        std::cerr << separator << nextLine << C_RESET << std::endl;
+    }
+
+    // Generate the caret alignment on error line
+    // Print spaces equal to the width of the gutter
+    for (size_t i = 0; i < gutterWidth; i++) {
+        std::cerr << ' ';
+    }
+
+    // Account for tab characters inside the source code itself
     for (size_t i = 0; i < column; i++) {
-        if (i < lineSource.length() && lineSource[i] == '\t') {
+        if (i < errorLine.length() && errorLine[i] == '\t') {
             std::cerr << '\t';
         } else {
             std::cerr << ' ';
         }
     }
 
-    std::cerr << C_RED << "^" << C_RESET << std::endl;
+    // Draw the underline carets
+    std::cerr << C_RED;
+    for (size_t i = 0; i < length; i++) {
+        std::cerr << '^';
+    }
 
-    // Print a message from the SCSA since the user has clearly failed
-    // printAtarMessage();
+    // Print error label and message next to the carets
+    std::string label = getErrorLabel(type);
+    std::cerr << " " << label << ": " << C_RESET << message << std::endl;
 
-    // Throw exception to halt execution
+    // Lovely message from our overlords SCSA
+    printAtarMessage();
+
     throw std::runtime_error("");
 }

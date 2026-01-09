@@ -7,7 +7,7 @@
  * @param errReporter Reference to error reporter for error handling
  */
 Lexer::Lexer(const std::string &src, ErrorReporter &errReporter)
-    : source(src), start(0), current(0), line(1), reporter(errReporter) {
+    : source(src), start(0), current(0), line(1), startColumn(0), column(0), reporter(errReporter) {
 
     /**
      * Initialize the keyword map
@@ -45,10 +45,11 @@ Lexer::Lexer(const std::string &src, ErrorReporter &errReporter)
  */
 std::vector<Token> Lexer::scanTokens() {
     while (!isAtEnd()) {
-        start = current;
+        start       = current;
+        startColumn = column;
         scanToken();
     }
-    tokens.push_back({TOK_EOF, "", line});
+    tokens.push_back({TOK_EOF, "", line, column, 0});
     return tokens;
 }
 
@@ -65,7 +66,13 @@ bool Lexer::isAtEnd() {
  * @return The current character before advancing
  */
 char Lexer::advance() {
-    return source[current++];
+    char c = source[current++];
+    if (c == '\n') {
+        column = 0;
+    } else {
+        column++;
+    }
+    return c;
 }
 
 /**
@@ -98,7 +105,8 @@ bool Lexer::match(char expected) {
  */
 void Lexer::addToken(TokenType type) {
     std::string text = source.substr(start, current - start);
-    tokens.push_back({type, text, line});
+    int length       = current - start;
+    tokens.push_back({type, text, line, startColumn, length});
 }
 
 /**
@@ -107,7 +115,8 @@ void Lexer::addToken(TokenType type) {
  * @param literal The literal value for the token
  */
 void Lexer::addToken(TokenType type, std::string literal) {
-    tokens.push_back({type, literal, line});
+    int length = current - start;
+    tokens.push_back({type, literal, line, startColumn, length});
 }
 
 /**
@@ -116,25 +125,21 @@ void Lexer::addToken(TokenType type, std::string literal) {
  * @param message The error message to display
  */
 void Lexer::reportError(ErrorType type, const std::string &message) {
-    // Locate start and end of current line to provide context
+    // Calculate the column position relative to the start of the line
     size_t lineStart = start;
     while (lineStart > 0 && source[lineStart - 1] != '\n') {
         lineStart--;
     }
 
-    size_t lineEnd = current;
-    while (lineEnd < source.length() && source[lineEnd] != '\n') {
-        lineEnd++;
-    }
+    size_t errorColumn = start - lineStart;
 
-    // Extract the entire line from source
-    std::string lineStr = source.substr(lineStart, lineEnd - lineStart);
-
-    // Calculate the column position relative to the start of the line
-    size_t column = start - lineStart;
+    // Calculate the length of the erroneous token
+    size_t tokenLength = current - start;
+    if (tokenLength == 0)
+        tokenLength = 1; // At least 1 character
 
     // Delegate to ErrorReporter for formatted output
-    reporter.report(type, line, column, message, lineStr);
+    reporter.report(type, line, errorColumn, message, tokenLength);
 }
 
 /**

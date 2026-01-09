@@ -50,7 +50,7 @@ int Pseudocode::runFile(const std::string &path) {
 
         // Initialize error reporting at the lexing stage
         InterpreterStage stage = InterpreterStage::Lexing;
-        ErrorReporter reporter(stage);
+        ErrorReporter reporter(stage, path, source);
         Lexer lexer(source, reporter);
 
         // Tokenize the source code

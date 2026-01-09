@@ -85,7 +85,8 @@ ExprPtr Parser::parseExpression(Precedence precedence) {
     case TOK_MINUS:
         // Recursively parse high precedence (unary binds tight)
         left = std::make_unique<BinaryExpr>(
-            std::make_unique<LiteralExpr>(Token{TOK_INTEGER, "0", prefixToken.line}), prefixToken,
+            std::make_unique<LiteralExpr>(Token{TOK_INTEGER, "0", prefixToken.line, 0, 1}),
+            prefixToken,
             parseExpression(PREC_CALL) // unary hack for -x
         );
         break;
@@ -285,15 +286,19 @@ ExprPtr Parser::subscript(ExprPtr left) {
  * Right-associative, so a = b = c parses as a = (b = c)
  */
 ExprPtr Parser::assignment(ExprPtr left) {
-    // Right associative, so we parse everything to the right
-    ExprPtr value = parseExpression(PREC_NONE);
-
     // Left side must be a valid assignment target
     if (!dynamic_cast<VariableExpr *>(left.get()) && !dynamic_cast<GetExpr *>(left.get()) &&
         !dynamic_cast<ArrayAccessExpr *>(left.get())) {
-        errorAt(previous(), "Invalid assignment target.");
+        Token assigned = tokens[current - 2];
+        errorAt(assigned, "Invalid assignment target.");
         return nullptr;
     }
+    
+    // Now consume the = token
+    advance();
+    
+    // Right associative, so we parse everything to the right
+    ExprPtr value = parseExpression(PREC_NONE);
 
     return std::make_unique<AssignExpr>(std::move(left), std::move(value));
 }
@@ -342,7 +347,7 @@ StmtPtr Parser::classDeclaration() {
     Token name = consume(TOK_IDENTIFIER, "Expected class name.");
     if (TRACE)
         std::cerr << "[Parse]   class: " << name.lexeme << std::endl;
-    Token superclass{TOK_EOF, "", 0};
+    Token superclass{TOK_EOF, "", 0, 0, 0};
 
     // Inheritance
     if (match(TOK_INHERITS)) {
@@ -613,41 +618,12 @@ Token Parser::consume(TokenType type, std::string message) {
  */
 void Parser::errorAt(Token token, const std::string &message) {
     if (token.type == TOK_EOF) {
-        reporter.report(ErrorType::Syntax, token.line, 0, message + " at end", "");
+        reporter.report(ErrorType::Syntax, token.line, 0, message + " at end", 1);
         return;
     }
 
-    // Find the start index of the line in the source string
-    // Since Token only stores line number, we scan source to find the Nth line.
-    size_t lineStart = 0;
-    int currentLine  = 1;
-
-    while (currentLine < token.line && lineStart < source.length()) {
-        if (source[lineStart] == '\n')
-            currentLine++;
-        lineStart++;
-    }
-
-    // Find the end of this line
-    size_t lineEnd = lineStart;
-    while (lineEnd < source.length() && source[lineEnd] != '\n') {
-        lineEnd++;
-    }
-
-    // Extract the context line
-    std::string lineStr = source.substr(lineStart, lineEnd - lineStart);
-
-    // Calculate column using heuristic
-    // Since Token lacks 'column' or 'start_index', we search for the lexeme
-    // within the line to approximate the caret position.
-    size_t column = 0;
-    size_t found  = lineStr.find(token.lexeme);
-    if (found != std::string::npos) {
-        column = found;
-    }
-
-    // Report the error with context
-    reporter.report(ErrorType::Syntax, token.line, column, message, lineStr);
+    // Use token's stored column position and length directly
+    reporter.report(ErrorType::Syntax, token.line, token.column, message, token.length);
 }
 
 void Parser::synchronize() {

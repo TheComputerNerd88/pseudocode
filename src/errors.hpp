@@ -17,6 +17,7 @@ enum class ErrorType {
 #define C_RED "\033[31m"
 #define C_RESET "\033[0m"
 #define C_BLUE "\e[34m"
+#define C_GRAY "\033[2m"
 
 /**
  * Print an error message from our benevolent overlord SCSA
@@ -31,6 +32,10 @@ class ErrorReporter {
   private:
     // Reference to current interpreter stage
     InterpreterStage &stage;
+    // Current source file being processed
+    std::string filename;
+    // Full source code for context generation
+    std::string sourceCode;
 
     /**
      * Get human-readable error type label
@@ -42,21 +47,30 @@ class ErrorReporter {
      */
     std::string getStageLabel();
 
+    /**
+     * Extract a specific line from the source code
+     * @param lineNum The 1-based line number to extract
+     * @return The source code line, or empty string if out of range
+     */
+    std::string getSourceLine(size_t lineNum);
+
   public:
     /**
-     * Construct error reporter with reference to current stage
+     * Construct error reporter with reference to current stage, filename, and source code
      * @param stageRef Reference to the interpreter stage
+     * @param file The source filename for error context
+     * @param source The full source code for context generation
      */
-    ErrorReporter(InterpreterStage &stageRef);
+    ErrorReporter(InterpreterStage &stageRef, const std::string &file = "", const std::string &source = "");
 
     /**
-     * Report an error with full context
+     * Report an error with full context including surrounding lines
      * @param type The error type (Syntax, Type, etc.)
      * @param line The line number where error occurred
      * @param column The column position where error occurred
      * @param message The error message to display
-     * @param lineSource The source code line containing the error
+     * @param length The length of the erroneous token (for underlining)
      */
     void report(ErrorType type, size_t line, size_t column, const std::string &message,
-                const std::string &lineSource);
+                size_t length = 1);
 };

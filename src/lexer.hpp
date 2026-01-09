@@ -71,6 +71,8 @@ struct Token {
     TokenType type;
     std::string lexeme;
     int line;
+    int column; // Column position (0-indexed)
+    int length; // Length of the token in characters
 
     /**
      * Convert token type to human-readable string for debugging
@@ -181,6 +183,10 @@ class Lexer {
     size_t current;
     // Current line number (for error reporting)
     int line;
+    // Column at the start of current token (0-indexed)
+    int startColumn;
+    // Current column position in the current line (0-indexed)
+    int column;
     // Map of keywords to their token types
     std::unordered_map<std::string, TokenType> keywords;
 
