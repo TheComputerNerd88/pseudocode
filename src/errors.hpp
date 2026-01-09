@@ -34,8 +34,8 @@ class ErrorReporter {
     InterpreterStage &stage;
     // Current source file being processed
     std::string filename;
-    // Full source code for context generation
-    std::string sourceCode;
+    // Source code split by lines for O(1) access
+    std::vector<std::string> lines;
 
     /**
      * Get human-readable error type label
@@ -48,7 +48,7 @@ class ErrorReporter {
     std::string getStageLabel();
 
     /**
-     * Extract a specific line from the source code
+     * Get a specific line from the source code
      * @param lineNum The 1-based line number to extract
      * @return The source code line, or empty string if out of range
      */
@@ -61,7 +61,8 @@ class ErrorReporter {
      * @param file The source filename for error context
      * @param source The full source code for context generation
      */
-    ErrorReporter(InterpreterStage &stageRef, const std::string &file = "", const std::string &source = "");
+    ErrorReporter(InterpreterStage &stageRef, const std::string &file = "",
+                  const std::string &source = "");
 
     /**
      * Report an error with full context including surrounding lines

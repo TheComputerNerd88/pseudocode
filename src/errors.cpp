@@ -12,13 +12,27 @@ void printAtarMessage() {
 
 /**
  * ErrorReporter Constructor
- * Stores a reference to the current interpreter stage, filename, and source code for error reporting
+ * Stores a reference to the current interpreter stage, filename, and source code for error
+ * reporting
  * @param stageRef Reference to the current InterpreterStage
  * @param file The source filename being processed
  * @param source The full source code for context generation
  */
-ErrorReporter::ErrorReporter(InterpreterStage &stageRef, const std::string &file, const std::string &source) 
-    : stage(stageRef), filename(file), sourceCode(source) {
+ErrorReporter::ErrorReporter(InterpreterStage &stageRef, const std::string &file,
+                             const std::string &source)
+    : stage(stageRef), filename(file) {
+    // Split the source code into lines
+    std::string currentLine;
+    for (char c : source) {
+        if (c == '\n') {
+            lines.push_back(currentLine);
+            currentLine.clear();
+        } else {
+            currentLine += c;
+        }
+    }
+    // Add the last line if it's not empty or if source ends with newline
+    lines.push_back(currentLine);
 }
 
 /**
@@ -62,38 +76,10 @@ std::string ErrorReporter::getStageLabel() {
  * @return The source code line, or empty string if out of range
  */
 std::string ErrorReporter::getSourceLine(size_t lineNum) {
-    if (sourceCode.empty() || lineNum < 1) {
+    if (lines.empty() || lineNum < 1 || lineNum > lines.size()) {
         return "";
     }
-
-    size_t currentLine = 1;
-    size_t lineStart = 0;
-
-    for (size_t i = 0; i < sourceCode.length(); i++) {
-        if (i > 0 && sourceCode[i - 1] == '\n') {
-            currentLine++;
-            if (currentLine == lineNum) {
-                lineStart = i;
-                break;
-            }
-        } else if (i == 0 && lineNum == 1) {
-            lineStart = 0;
-            break;
-        }
-    }
-
-    // If we never found the line, return empty
-    if (currentLine != lineNum && lineNum != 1) {
-        return "";
-    }
-
-    // Find the end of this line
-    size_t lineEnd = lineStart;
-    while (lineEnd < sourceCode.length() && sourceCode[lineEnd] != '\n') {
-        lineEnd++;
-    }
-
-    return sourceCode.substr(lineStart, lineEnd - lineStart);
+    return lines[lineNum - 1];
 }
 
 /**
@@ -119,34 +105,44 @@ void ErrorReporter::report(ErrorType type, size_t line, size_t column, const std
 
     // Get the error line
     std::string errorLine = getSourceLine(line);
-    
+
     // Create coordinate string
-    std::string coords = std::to_string(line) + ":" + std::to_string(column + 1);
-    std::string separator = " │ "; 
-    size_t gutterWidth = coords.length() + 3;
+    std::string lineStr   = std::to_string(line);
+    std::string separator = " │ ";
+    size_t gutterWidth    = lineStr.length() + 3;
 
     // Print filename (Aligned)
     if (!filename.empty()) {
         std::string indent(gutterWidth - 2, ' ');
-        std::cerr << C_BLUE << indent << "┌─ " << filename << C_RESET << std::endl;
+        std::cerr << C_BLUE << indent << "┌──[" << filename << ":" << line << ":" << column + 1
+                  << "]" << C_RESET << std::endl;
     }
 
-    // Print line before (if it exists)
+    // Print previous two lines (if they exist)
     if (line > 1) {
-        std::string prevLine = getSourceLine(line - 1);
-        if (!prevLine.empty()) {
-            std::string prevCoords = std::to_string(line - 1);
-            std::cerr << C_BLUE << prevCoords;
-            // Pad to match the width of the error line number
-            for (size_t i = prevCoords.length(); i < coords.length(); i++) {
-                std::cerr << " ";
+        // Determine start line (max 2 lines back, but not less than 1)
+        size_t startContext = (line > 2) ? line - 2 : 1;
+
+        for (size_t i = startContext; i < line; i++) {
+            std::string prevLine = getSourceLine(i);
+
+            if (!prevLine.empty()) {
+                std::string prevLineString = std::to_string(i);
+                std::cerr << C_GRAY << prevLineString << C_RESET;
+
+                // Pad to match the width of the main error line number
+                for (size_t j = prevLineString.length(); j < lineStr.length(); j++) {
+                    std::cerr << " ";
+                }
+
+                std::cerr << C_BLUE << separator << C_RESET << C_GRAY << prevLine << C_RESET
+                          << std::endl;
             }
-            std::cerr << separator << C_RESET << C_GRAY << prevLine << C_RESET << std::endl;
         }
     }
 
     // Print the error line with highlighting
-    std::cerr << C_BLUE << coords << separator << C_RESET;
+    std::cerr << C_BLUE << lineStr << separator << C_RESET;
 
     // Print the line up to the error
     std::cerr << errorLine.substr(0, column);
@@ -162,9 +158,11 @@ void ErrorReporter::report(ErrorType type, size_t line, size_t column, const std
 
     // Generate the caret alignment on error line
     // Print spaces equal to the width of the gutter
-    for (size_t i = 0; i < gutterWidth; i++) {
-        std::cerr << ' ';
+    // Print empty line to seperate
+    for (size_t i = 0; i < lineStr.length(); i++) {
+        std::cerr << " ";
     }
+    std::cerr << C_BLUE << separator << C_RESET;
 
     // Account for tab characters inside the source code itself
     for (size_t i = 0; i < column; i++) {
@@ -184,6 +182,20 @@ void ErrorReporter::report(ErrorType type, size_t line, size_t column, const std
     // Print error label and message next to the carets
     std::string label = getErrorLabel(type);
     std::cerr << " " << label << ": " << C_RESET << message << std::endl;
+
+    // Print line after
+    std::string nextLine = getSourceLine(line + 1);
+    if (!nextLine.empty()) {
+        std::string nextLineString = std::to_string(line + 1);
+        std::cerr << C_GRAY << nextLineString << C_RESET;
+
+        // Pad if necessary (though usually next line number is >= current line number width)
+        for (size_t i = nextLineString.length(); i < lineStr.length(); i++) {
+            std::cerr << " ";
+        }
+
+        std::cerr << C_BLUE << separator << C_RESET << C_GRAY << nextLine << C_RESET << std::endl;
+    }
 
     // // Lovely message from our overlords SCSA
     // printAtarMessage();

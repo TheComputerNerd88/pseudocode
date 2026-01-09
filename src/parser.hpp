@@ -119,6 +119,11 @@ class Parser {
     StmtPtr whileStatement();
 
     /**
+     * Parse a for-in loop with variable, iterable, and body
+     */
+    StmtPtr forInStatement();
+
+    /**
      * Parse a print statement
      */
     StmtPtr printStatement();

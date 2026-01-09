@@ -129,6 +129,29 @@ void ASTPrinter::visitWhileStmt(WhileStmt *stmt) {
 }
 
 /**
+ * Visit a For-In Statement
+ * Prints the for-in loop structure: variable, iterable, and loop body.
+ * @param stmt Pointer to the for-in statement node
+ */
+void ASTPrinter::visitForInStmt(ForInStmt *stmt) {
+    std::cout << indent << "[ForIn] " << stmt->variable.lexeme << std::endl;
+
+    IndentScope scope(*this);
+    std::cout << indent << "Iterable:" << std::endl;
+    {
+        IndentScope iterScope(*this);
+        accept(stmt->iterable.get());
+    }
+
+    std::cout << indent << "Body:" << std::endl;
+    {
+        IndentScope bodyScope(*this);
+        for (const auto &st : stmt->body)
+            accept(st.get());
+    }
+}
+
+/**
  * Visit a Return Statement
  * Prints the return marker and recursively prints the return value if present.
  * @param stmt Pointer to the return statement node

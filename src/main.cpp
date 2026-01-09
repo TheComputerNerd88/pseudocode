@@ -82,7 +82,6 @@ int Pseudocode::runFile(const std::string &path) {
  */
 int Pseudocode::runRepl() {
     InterpreterStage stage = InterpreterStage::Lexing;
-    ErrorReporter reporter(stage);
 
     std::cout << "Interactive SCSA Pseudocode Interpreter" << std::endl;
     std::cout << "Type 'exit' to quit" << std::endl;
@@ -101,6 +100,9 @@ int Pseudocode::runRepl() {
             continue;
         if (line == "exit")
             break;
+
+        // Create a new ErrorReporter for each line with the current source
+        ErrorReporter reporter(stage, "", line);
 
         try {
             // Tokenize the input line

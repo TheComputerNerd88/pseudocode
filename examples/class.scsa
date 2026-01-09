@@ -1,9 +1,9 @@
 CLASS Animal
-Attributes:
+ATTRIBUTES
     name
     hunger = 5
     food_list = []
-Methods:
+METHODS
     FUNCTION Animal(new_name)
         name = new_name
     END Animal

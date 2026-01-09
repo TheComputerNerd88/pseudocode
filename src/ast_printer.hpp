@@ -37,6 +37,7 @@ class ASTPrinter : public ExprVisitor, public StmtVisitor {
     void visitWhileStmt(WhileStmt *stmt) override;
     void visitFunctionStmt(FunctionStmt *stmt) override;
     void visitClassStmt(ClassStmt *stmt) override;
+    void visitForInStmt(ForInStmt *stmt) override;
 
   private:
     std::string indent = ""; // Holds the current indentation string

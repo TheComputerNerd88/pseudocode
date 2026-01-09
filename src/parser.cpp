@@ -293,10 +293,9 @@ ExprPtr Parser::assignment(ExprPtr left) {
         errorAt(assigned, "Invalid assignment target.");
         return nullptr;
     }
-    
-    // Now consume the = token
-    advance();
-    
+
+    // The = token has already been consumed in parseExpression
+    // Parse the right-hand side expression
     // Right associative, so we parse everything to the right
     ExprPtr value = parseExpression(PREC_NONE);
 
@@ -453,6 +452,10 @@ StmtPtr Parser::statement() {
         traceExit("statement");
         return whileStatement();
     }
+    if (match(TOK_FOR)) {
+        traceExit("statement");
+        return forInStatement();
+    }
     if (match(TOK_IF)) {
         traceExit("statement");
         return ifStatement();
@@ -506,6 +509,33 @@ StmtPtr Parser::whileStatement() {
     consume(TOK_WHILE, "Expected 'WHILE' after 'END'.");
     traceExit("whileStatement");
     return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
+}
+
+/**
+ * For-in loop statement
+ * Parses: FOR variable IN iterable statements END FOR
+ */
+StmtPtr Parser::forInStatement() {
+    traceEnter("forInStatement");
+    
+    // Get the loop variable
+    Token variable = consume(TOK_IDENTIFIER, "Expected variable name after FOR.");
+    
+    // Expect IN keyword
+    consume(TOK_IN, "Expected 'IN' after for loop variable.");
+    
+    // Parse the iterable expression
+    ExprPtr iterable = parseExpression(PREC_NONE);
+    
+    // Parse the loop body
+    std::vector<StmtPtr> body = block();
+    
+    // Expect END FOR
+    consume(TOK_END, "Expected 'END' after for loop.");
+    consume(TOK_FOR, "Expected 'FOR' after 'END'.");
+    
+    traceExit("forInStatement");
+    return std::make_unique<ForInStmt>(variable, std::move(iterable), std::move(body));
 }
 
 /**

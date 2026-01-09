@@ -7,7 +7,8 @@
  * @param errReporter Reference to error reporter for error handling
  */
 Lexer::Lexer(const std::string &src, ErrorReporter &errReporter)
-    : source(src), start(0), current(0), line(1), startLine(1), startColumn(0), column(0), reporter(errReporter) {
+    : source(src), start(0), current(0), line(1), startLine(1), startColumn(0), column(0),
+      reporter(errReporter) {
 
     /**
      * Initialize the keyword map
@@ -137,8 +138,8 @@ void Lexer::reportError(ErrorType type, const std::string &message) {
     // Calculate the length of the erroneous token
     size_t tokenLength = current - start;
     if (tokenLength == 0)
-        tokenLength = 1; // At least 1 character
-    
+        tokenLength = 1;
+
     // Truncate token length if we meet a newline within it
     for (size_t i = start; i < current; i++) {
         if (source[i] == '\n') {
