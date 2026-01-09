@@ -81,10 +81,12 @@ int Pseudocode::runFile(const std::string& path) {
 int Pseudocode::runRepl() {
     InterpreterStage stage = InterpreterStage::Lexing;
 
+    std::cout << "Interactive SCSA Pseudocode Interpreter" << std::endl;
+
     std::string line;
     while (true) {
         // Display prompt and read a line of input
-        std::cout << "> " << std::flush;
+        std::cout << "[SCSA] >> " << std::flush;
         if (!std::getline(std::cin, line)) break;
         if (line.empty()) continue;
 
@@ -99,10 +101,12 @@ int Pseudocode::runRepl() {
             // Parse tokens
             stage = InterpreterStage::Parsing;
             Parser parser(tokens, line, reporter);
-            auto statements = parser.parse();
+
+            ASTPrinter printer;
+            printer.print(parser.parse());
 
         } catch (const std::exception& e) {
-            // Display error but continue REPL
+            // Display error without crashing the REPL
             std::cerr << e.what() << std::endl;
         }
     }

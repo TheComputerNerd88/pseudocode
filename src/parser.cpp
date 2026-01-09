@@ -10,7 +10,12 @@
 Parser::Parser(const std::vector<Token>& tokens, const std::string& source, ErrorReporter& reporter) 
     : tokens(tokens), source(source), reporter(reporter) {}
 
-// --- Debug Tracing ---
+
+// ============================================================
+// Debug Tracing
+// 
+// Traces entry and exit of parsing functions.
+// ============================================================
 
 /**
  * Log parser function entry for debugging
@@ -72,7 +77,7 @@ ExprPtr Parser::parseExpression(Precedence precedence) {
             left = std::make_unique<BinaryExpr>(
                 std::make_unique<LiteralExpr>(Token{TOK_INTEGER, "0", prefixToken.line}),
                 prefixToken,
-                parseExpression(PREC_CALL) // rudimentary unary hack for -x
+                parseExpression(PREC_CALL) // unary hack for -x
             );
             break;
         default:
@@ -258,8 +263,14 @@ ExprPtr Parser::assignment(ExprPtr left) {
     // Right associative, so we parse everything to the right
     ExprPtr value = parseExpression(PREC_NONE);
     
-    // Left side must be a valid assignment target (Variable, Get, or ArrayAccess)
-    // Note: In a robust compiler, we check `left` type here.
+    // Left side must be a valid assignment target
+    if (!dynamic_cast<VariableExpr*>(left.get()) &&
+        !dynamic_cast<GetExpr*>(left.get()) &&
+        !dynamic_cast<ArrayAccessExpr*>(left.get())) {
+        errorAt(previous(), "Invalid assignment target.");
+        return nullptr;
+    }
+
     return std::make_unique<AssignExpr>(std::move(left), std::move(value));
 }
 
@@ -302,11 +313,13 @@ StmtPtr Parser::declaration() {
  *         END name
  */
 StmtPtr Parser::classDeclaration() {
+    // Start parsing class
     traceEnter("classDeclaration");
     Token name = consume(TOK_IDENTIFIER, "Expected class name.");
     if (TRACE) std::cerr << "[Parse]   class: " << name.lexeme << std::endl;
     Token superclass{TOK_EOF, "", 0};
     
+    // Inheritance
     if (match(TOK_INHERITS)) {
         superclass = consume(TOK_IDENTIFIER, "Expected superclass name.");
     }
@@ -316,17 +329,15 @@ StmtPtr Parser::classDeclaration() {
         if (check(TOK_COLON)) advance(); 
         // We scan attributes until we hit METHODS or END
         while (!check(TOK_METHODS) && !check(TOK_END) && !isAtEnd()) {
-            // In this specific language, attributes seem to be declared 
-            // via simple assignment or just identifier listing
+            // Attributes are declared by just assigning
              consume(TOK_IDENTIFIER, "Expected attribute name.");
              if (match(TOK_ASSIGN)) {
-                 parseExpression(PREC_NONE); // Parse default value
+                 parseExpression(PREC_NONE);
              }
-             // We are essentially ignoring attribute defs in parsing 
-             // and deferring to init logic, or you could store them in AST
         }
     }
 
+    // Construct method list
     std::vector<StmtPtr> methods;
     if (match(TOK_METHODS)) {
         if (check(TOK_COLON)) advance();
@@ -338,7 +349,10 @@ StmtPtr Parser::classDeclaration() {
     consume(TOK_END, "Expected 'END' after class body.");
     Token endName = consume(TOK_IDENTIFIER, "Expected class name after 'END'.");
     
-    // Optional: Validate name.lexeme == endName.lexeme
+    // Validate name.lexeme == endName.lexeme
+    if (name.lexeme != endName.lexeme) {
+        errorAt(endName, "Class name after 'END' does not match class declaration.");
+    }
     traceExit("classDeclaration");
 
     return std::make_unique<ClassStmt>(name, superclass, std::move(methods));
@@ -352,23 +366,19 @@ StmtPtr Parser::classDeclaration() {
  */
 StmtPtr Parser::functionDeclaration() {
     traceEnter("functionDeclaration");
-    // Note: We already consumed "FUNCTION" if called from declaration(),
-    // but if called from Class, we might need to handle the keyword.
-    // Assuming `declaration` dispatch handles the keyword.
-    // If inside class, we need to ensure match(TOK_FUNCTION) was called.
-    
-    // For simplicity, let's assume the caller consumed FUNCTION keyword
-    // or we check it here. Since `declaration` dispatch does `match(TOK_FUNCTION)`,
-    // we need to look at `classDeclaration`.
-    // Let's assume standard `FUNCTION` keyword usage inside classes too.
+
+    // Handle whether 'FUNCTION' was consumed by caller or not
+    // since class declaration also calls this method
     if (previous().type != TOK_FUNCTION && !match(TOK_FUNCTION)) {
         errorAt(peek(), "Expected 'FUNCTION' keyword.");
     }
 
+    // Construct function name
     Token name = consume(TOK_IDENTIFIER, "Expected function name.");
     if (TRACE) std::cerr << "[Parse]   function: " << name.lexeme << std::endl;
     consume(TOK_LPAREN, "Expected '('.");
     
+    // Construct parameters list
     std::vector<Token> params;
     if (!check(TOK_RPAREN)) {
         do {
@@ -380,8 +390,12 @@ StmtPtr Parser::functionDeclaration() {
     std::vector<StmtPtr> body = block();
 
     consume(TOK_END, "Expected 'END' after function body.");
-    // Consuming the name after END
-    consume(TOK_IDENTIFIER, "Expected function name after 'END'.");
+
+    // Make sure names match
+    Token endName = consume(TOK_IDENTIFIER, "Expected function name after 'END'.");
+    if (name.lexeme != endName.lexeme) {
+        errorAt(endName, "Function name after 'END' does not match function declaration.");
+    }
     traceExit("functionDeclaration");
 
     return std::make_unique<FunctionStmt>(name, params, std::move(body));
@@ -389,7 +403,8 @@ StmtPtr Parser::functionDeclaration() {
 
 /**
  * Statement parsing
- * Dispatches to specific statement types (if, while, print, return) or expression statements
+ * Dispatches to specific statement types (if, while, print, return), or
+ * expression statements
  */
 StmtPtr Parser::statement() {
     traceEnter("statement");
@@ -410,15 +425,9 @@ StmtPtr Parser::statement() {
         return ifStatement();
     }
     
-    // Expression statement: must start with identifier (assignment or call)
-    if (check(TOK_IDENTIFIER)) {
-        ExprPtr expr = parseExpression(PREC_NONE);
-        traceExit("statement");
-        return std::make_unique<ExpressionStmt>(std::move(expr));
-    }
-
-    errorAt(peek(), "Unexpected token in statement.");
-    return nullptr;
+    ExprPtr expr = parseExpression(PREC_NONE);
+    traceExit("statement");
+    return std::make_unique<ExpressionStmt>(std::move(expr));
 }
 
 /**
@@ -531,15 +540,24 @@ Token Parser::peek() {
     return tokens[current];
 }
 
+/**
+ * Return previous token
+ */
 Token Parser::previous() {
     return tokens[current - 1];
 }
 
+/**
+ * Check if current token matches given type
+ */
 bool Parser::check(TokenType type) {
     if (isAtEnd()) return false;
     return peek().type == type;
 }
 
+/**
+ * If current token matches type, consume it and return true
+ */
 bool Parser::match(TokenType type) {
     if (check(type)) {
         advance();
@@ -548,6 +566,9 @@ bool Parser::match(TokenType type) {
     return false;
 }
 
+/**
+ * Consume a token of expected type or report an error
+ */
 Token Parser::consume(TokenType type, std::string message) {
     if (check(type)) return advance();
     
@@ -555,6 +576,9 @@ Token Parser::consume(TokenType type, std::string message) {
     return peek();
 }
 
+/**
+ * Report an error at a specific token with source context
+ */
 void Parser::errorAt(Token token, const std::string& message) {
     if (token.type == TOK_EOF) {
         reporter.report(
