@@ -16,6 +16,14 @@ enum class ErrorType {
 #define C_RESET "\033[0m"
 #define C_BLUE "\e[34m"
 
+void printAtarMessage() {
+    std::cout << C_RED << "[SCSA] Your ATAR is cooked, -99999 marks." <<
+        std::endl << "[SCSA] Congratulations, you are the first student" <<
+        " to ever get a negative study score! 😭" << std::endl <<
+        "[SCSA] Say goodbye to your future. L + ratio 😂 😂"
+        << C_RESET << std::endl;
+}
+
 class ErrorReporter {
 private:
     // Reference to current interpreter stage
@@ -40,7 +48,7 @@ private:
 public:
     ErrorReporter(InterpreterStage& stageRef) : stage(stageRef) {}
 
-    void report(ErrorType type, int line, int column,
+    void report(ErrorType type, size_t line, size_t column,
             const std::string& message, const std::string& lineSource) {
         // Print which stage the interpreter is in
         std::string stageLabel = getStageLabel();
@@ -59,19 +67,17 @@ public:
         // Generate the Pointer string
         std::cerr << "    ";
 
-        for (int i = 0; i < column; i++) {
+        for (size_t i = 0; i < column; i++) {
             if (i < lineSource.length() && lineSource[i] == '\t') {
                 std::cerr << '\t';
             } else {
                 std::cerr << ' ';
             }
         }
-        std::cout << C_RED << "^" << std::endl;
-        std::cout << "[SCSA] Your ATAR is cooked, -99999 marks." <<
-            std::endl << "[SCSA] Congratulations, you are the first student" <<
-            " to ever get a negative study score! 😭" << std::endl <<
-            "[SCSA] Say goodbye to your future. L + ratio 😂 😂"
-            << C_RESET << std::endl;
+
+        std::cerr << C_RED << "^" << C_RESET << std::endl;
+
+        printAtarMessage();
 
         throw std::runtime_error("");
     }

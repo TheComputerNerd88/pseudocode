@@ -120,19 +120,19 @@ private:
     std::string source;
     std::vector<Token> tokens;
     int start;
-    int current;
+    size_t current;
     int line;
     std::unordered_map<std::string, TokenType> keywords;
 
     ErrorReporter reporter;
     void reportError(ErrorType type, const std::string& message) {
         // Locate start and end of current line to print a better error message.
-        int lineStart = start;
+        size_t lineStart = start;
         while (lineStart > 0 && source[lineStart - 1] != '\n') {
             lineStart--;
         }
 
-        int lineEnd = current;
+        size_t lineEnd = current;
         while (lineEnd < source.length() && source[lineEnd] != '\n') {
             lineEnd++;
         }
@@ -141,7 +141,7 @@ private:
         std::string lineStr = source.substr(lineStart, lineEnd - lineStart);
 
         // Calculate the column
-        int column = start - lineStart;
+        size_t column = start - lineStart;
 
         // Pass to reporter
         reporter.report(type, line, column, message, lineStr);
