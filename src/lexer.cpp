@@ -1,8 +1,17 @@
 #include "lexer.hpp"
 
+/**
+ * Lexer Constructor
+ * Initializes the lexer with source code and sets up the keyword mapping.
+ * @param src The source code to tokenize
+ * @param errReporter Reference to error reporter for error handling
+ */
 Lexer::Lexer(const std::string& src, ErrorReporter& errReporter) :
     source(src), start(0), current(0), line(1), reporter(errReporter) {
-    // --- KEYWORD MAPPING ---
+    
+    /**
+     * Initialize the keyword map
+     */
     keywords["CLASS"] = TOK_CLASS;
     keywords["ATTRIBUTES"] = TOK_ATTRIBUTES;
     keywords["METHODS"] = TOK_METHODS;
@@ -27,6 +36,11 @@ Lexer::Lexer(const std::string& src, ErrorReporter& errReporter) :
     keywords["new"] = TOK_NEW;
 }
 
+/**
+ * Main tokenization loop
+ * Scans through the entire source code and generates a list of tokens.
+ * @return Vector of tokens representing the source code
+ */
 std::vector<Token> Lexer::scanTokens() {
     while (!isAtEnd()) {
         start = current;
@@ -36,19 +50,36 @@ std::vector<Token> Lexer::scanTokens() {
     return tokens;
 }
 
+/**
+ * Check if we've reached the end of the source code
+ * @return true if current position is at or past the end of source
+ */
 bool Lexer::isAtEnd() {
     return current >= source.length();
 }
 
+/**
+ * Consume and return the current character, then move to the next one
+ * @return The current character before advancing
+ */
 char Lexer::advance() {
     return source[current++];
 }
 
+/**
+ * Look at the current character without consuming it
+ * @return The current character, or null terminator if at end
+ */
 char Lexer::peek() {
     if (isAtEnd()) return '\0';
     return source[current];
 }
 
+/**
+ * Conditionally consume a character if it matches the expected one
+ * @param expected The character to match
+ * @return true if the character was matched and consumed, false otherwise
+ */
 bool Lexer::match(char expected) {
     if (isAtEnd()) return false;
     if (source[current] != expected) return false;
@@ -56,17 +87,31 @@ bool Lexer::match(char expected) {
     return true;
 }
 
+/**
+ * Add a token to the token list, extracting lexeme from source
+ * @param type The type of token to add
+ */
 void Lexer::addToken(TokenType type) {
     std::string text = source.substr(start, current - start);
     tokens.push_back({type, text, line});
 }
 
+/**
+ * Add a token to the token list with a provided literal value
+ * @param type The type of token to add
+ * @param literal The literal value for the token
+ */
 void Lexer::addToken(TokenType type, std::string literal) {
     tokens.push_back({type, literal, line});
 }
 
+/**
+ * Report an error with contextual information about the problematic line
+ * @param type The type of error (Syntax, Type, etc.)
+ * @param message The error message to display
+ */
 void Lexer::reportError(ErrorType type, const std::string& message) {
-    // Locate start and end of current line to print a better error message.
+    // Locate start and end of current line to provide context
     size_t lineStart = start;
     while (lineStart > 0 && source[lineStart - 1] != '\n') {
         lineStart--;
@@ -77,24 +122,30 @@ void Lexer::reportError(ErrorType type, const std::string& message) {
         lineEnd++;
     }
 
-    // Extract the actual line string
+    // Extract the entire line from source
     std::string lineStr = source.substr(lineStart, lineEnd - lineStart);
 
-    // Calculate the column
+    // Calculate the column position relative to the start of the line
     size_t column = start - lineStart;
 
-    // Pass to reporter
+    // Delegate to ErrorReporter for formatted output
     reporter.report(type, line, column, message, lineStr);
 }
 
+/**
+ * Scan a string literal delimited by the specified quote character
+ * Handles line counting for multi-line strings
+ * @param quoteType The quote character that delimits the string ('\"' or '\'')
+ */
 void Lexer::string(char quoteType) {
+    // Consume characters until we find the closing quote
     while (peek() != quoteType && !isAtEnd()) {
-        if (peek() == '\n') line++;
+        if (peek() == '\n') line++;  // Track line numbers for multi-line strings
         advance();
     }
 
+    // Report error if string is never terminated
     if (isAtEnd()) {
-        // Set current to point to where the string should end
         reportError(
             ErrorType::Syntax,
             "Unterminated string."
@@ -102,25 +153,30 @@ void Lexer::string(char quoteType) {
         return;
     }
 
-    advance();
+    advance();  // Consume closing quote
+    // Extract string value without the surrounding quotes
     std::string value = source.substr(start + 1, current - start - 2);
     addToken(TOK_STRING, value);
 }
 
+/**
+ * Scan a numeric literal (integer or float)
+ * Detects floats by looking for a decimal point followed by digits
+ */
 void Lexer::number() {
-    // Consume all digits
+    // Consume all leading digits
     while (isdigit(peek())) {
         advance();
     }
 
-    // Float detection, if next token is '.' proceeded with some more number
-    // looking stuff then it's probably a float.
+    // Check for decimal point to distinguish float from integer
+    // Look ahead to ensure there's a digit after the decimal
     if (peek() == '.' && isdigit(source[current + 1])) {
-        advance();
+        advance();  // Consume the decimal point
         while (isdigit(peek())) advance();
         addToken(TOK_FLOAT);
     } else {
-        // Add integer if it's not secretly an malformed variable name
+        // Ensure number doesn't run into a variable name (e.g., "123abc")
         if (!isalpha(peek())) {
             addToken(TOK_INTEGER);
         } else {
@@ -129,19 +185,29 @@ void Lexer::number() {
     }
 }
 
+/**
+ * Scan an identifier or keyword
+ * Identifiers can contain alphanumeric characters and underscores
+ * Keywords are recognized by lookup in the keyword map
+ */
 void Lexer::identifier() {
-    // Allow alphanumeric and underscores
+    // Consume all alphanumeric characters and underscores
     while (isalnum(peek()) || peek() == '_') advance();
 
     std::string text = source.substr(start, current - start);
     TokenType type = TOK_IDENTIFIER;
     
+    // Check if the identifier is actually a reserved keyword
     if (keywords.find(text) != keywords.end()) {
         type = keywords[text];
     }
     addToken(type);
 }
 
+/**
+ * Scan a single token from the source code
+ * Dispatches to appropriate handler based on the current character
+ */
 void Lexer::scanToken() {
     char c = advance();
     switch (c) {
