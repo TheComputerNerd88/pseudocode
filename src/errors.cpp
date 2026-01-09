@@ -160,18 +160,6 @@ void ErrorReporter::report(ErrorType type, size_t line, size_t column, const std
     }
     std::cerr << std::endl;
 
-    // Print line after (if it exists)
-    if (!getSourceLine(line + 1).empty()) {
-        std::string nextLine = getSourceLine(line + 1);
-        std::string nextCoords = std::to_string(line + 1);
-        std::cerr << C_GRAY << nextCoords;
-        // Pad to match the width of the error line number
-        for (size_t i = nextCoords.length(); i < coords.length(); i++) {
-            std::cerr << " ";
-        }
-        std::cerr << separator << nextLine << C_RESET << std::endl;
-    }
-
     // Generate the caret alignment on error line
     // Print spaces equal to the width of the gutter
     for (size_t i = 0; i < gutterWidth; i++) {
@@ -197,8 +185,8 @@ void ErrorReporter::report(ErrorType type, size_t line, size_t column, const std
     std::string label = getErrorLabel(type);
     std::cerr << " " << label << ": " << C_RESET << message << std::endl;
 
-    // Lovely message from our overlords SCSA
-    printAtarMessage();
+    // // Lovely message from our overlords SCSA
+    // printAtarMessage();
 
     throw std::runtime_error("");
 }

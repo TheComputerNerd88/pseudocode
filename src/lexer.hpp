@@ -183,6 +183,8 @@ class Lexer {
     size_t current;
     // Current line number (for error reporting)
     int line;
+    // Line number at the start of current token
+    int startLine;
     // Column at the start of current token (0-indexed)
     int startColumn;
     // Current column position in the current line (0-indexed)

@@ -7,7 +7,7 @@
  * @param errReporter Reference to error reporter for error handling
  */
 Lexer::Lexer(const std::string &src, ErrorReporter &errReporter)
-    : source(src), start(0), current(0), line(1), startColumn(0), column(0), reporter(errReporter) {
+    : source(src), start(0), current(0), line(1), startLine(1), startColumn(0), column(0), reporter(errReporter) {
 
     /**
      * Initialize the keyword map
@@ -46,6 +46,7 @@ Lexer::Lexer(const std::string &src, ErrorReporter &errReporter)
 std::vector<Token> Lexer::scanTokens() {
     while (!isAtEnd()) {
         start       = current;
+        startLine   = line;
         startColumn = column;
         scanToken();
     }
@@ -137,9 +138,18 @@ void Lexer::reportError(ErrorType type, const std::string &message) {
     size_t tokenLength = current - start;
     if (tokenLength == 0)
         tokenLength = 1; // At least 1 character
+    
+    // Truncate token length if we meet a newline within it
+    for (size_t i = start; i < current; i++) {
+        if (source[i] == '\n') {
+            tokenLength = i - start;
+            break;
+        }
+    }
 
-    // Delegate to ErrorReporter for formatted output
-    reporter.report(type, line, errorColumn, message, tokenLength);
+    // Report error at the line where the token started, not where we are now
+    // This is important for multi-line tokens like unterminated strings
+    reporter.report(type, startLine, errorColumn, message, tokenLength);
 }
 
 /**
