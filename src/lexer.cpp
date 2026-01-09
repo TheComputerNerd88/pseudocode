@@ -6,36 +6,36 @@
  * @param src The source code to tokenize
  * @param errReporter Reference to error reporter for error handling
  */
-Lexer::Lexer(const std::string& src, ErrorReporter& errReporter) :
-    source(src), start(0), current(0), line(1), reporter(errReporter) {
-    
+Lexer::Lexer(const std::string &src, ErrorReporter &errReporter)
+    : source(src), start(0), current(0), line(1), reporter(errReporter) {
+
     /**
      * Initialize the keyword map
      */
-    keywords["CLASS"] = TOK_CLASS;
+    keywords["CLASS"]      = TOK_CLASS;
     keywords["ATTRIBUTES"] = TOK_ATTRIBUTES;
-    keywords["METHODS"] = TOK_METHODS;
-    keywords["FUNCTION"] = TOK_FUNCTION;
-    keywords["RETURN"] = TOK_RETURN;
-    keywords["END"] = TOK_END;
-    keywords["NEW"] = TOK_NEW;
-    keywords["PRINT"] = TOK_PRINT;
+    keywords["METHODS"]    = TOK_METHODS;
+    keywords["FUNCTION"]   = TOK_FUNCTION;
+    keywords["RETURN"]     = TOK_RETURN;
+    keywords["END"]        = TOK_END;
+    keywords["NEW"]        = TOK_NEW;
+    keywords["PRINT"]      = TOK_PRINT;
 
     keywords["WHILE"] = TOK_WHILE;
-    keywords["IF"] = TOK_IF;
-    keywords["THEN"] = TOK_THEN;
-    keywords["ELSE"] = TOK_ELSE;
-    keywords["IN"] = TOK_IN;
-    keywords["FOR"] = TOK_FOR;
+    keywords["IF"]    = TOK_IF;
+    keywords["THEN"]  = TOK_THEN;
+    keywords["ELSE"]  = TOK_ELSE;
+    keywords["IN"]    = TOK_IN;
+    keywords["FOR"]   = TOK_FOR;
 
-    keywords["TRUE"] = TOK_TRUE;
+    keywords["TRUE"]  = TOK_TRUE;
     keywords["FALSE"] = TOK_FALSE;
 
     keywords["Attributes"] = TOK_ATTRIBUTES;
-    keywords["Methods"] = TOK_METHODS;
-    keywords["True"] = TOK_TRUE;
-    keywords["False"] = TOK_FALSE;
-    keywords["new"] = TOK_NEW;
+    keywords["Methods"]    = TOK_METHODS;
+    keywords["True"]       = TOK_TRUE;
+    keywords["False"]      = TOK_FALSE;
+    keywords["new"]        = TOK_NEW;
 }
 
 /**
@@ -73,7 +73,8 @@ char Lexer::advance() {
  * @return The current character, or null terminator if at end
  */
 char Lexer::peek() {
-    if (isAtEnd()) return '\0';
+    if (isAtEnd())
+        return '\0';
     return source[current];
 }
 
@@ -83,8 +84,10 @@ char Lexer::peek() {
  * @return true if the character was matched and consumed, false otherwise
  */
 bool Lexer::match(char expected) {
-    if (isAtEnd()) return false;
-    if (source[current] != expected) return false;
+    if (isAtEnd())
+        return false;
+    if (source[current] != expected)
+        return false;
     current++;
     return true;
 }
@@ -112,7 +115,7 @@ void Lexer::addToken(TokenType type, std::string literal) {
  * @param type The type of error (Syntax, Type, etc.)
  * @param message The error message to display
  */
-void Lexer::reportError(ErrorType type, const std::string& message) {
+void Lexer::reportError(ErrorType type, const std::string &message) {
     // Locate start and end of current line to provide context
     size_t lineStart = start;
     while (lineStart > 0 && source[lineStart - 1] != '\n') {
@@ -142,20 +145,18 @@ void Lexer::reportError(ErrorType type, const std::string& message) {
 void Lexer::string(char quoteType) {
     // Consume characters until we find the closing quote
     while (peek() != quoteType && !isAtEnd()) {
-        if (peek() == '\n') line++;  // Track line numbers for multi-line strings
+        if (peek() == '\n')
+            line++; // Track line numbers for multi-line strings
         advance();
     }
 
     // Report error if string is never terminated
     if (isAtEnd()) {
-        reportError(
-            ErrorType::Syntax,
-            "Unterminated string."
-        );
+        reportError(ErrorType::Syntax, "Unterminated string.");
         return;
     }
 
-    advance();  // Consume closing quote
+    advance(); // Consume closing quote
     // Extract string value without the surrounding quotes
     std::string value = source.substr(start + 1, current - start - 2);
     addToken(TOK_STRING, value);
@@ -174,8 +175,9 @@ void Lexer::number() {
     // Check for decimal point to distinguish float from integer
     // Look ahead to ensure there's a digit after the decimal
     if (peek() == '.' && isdigit(source[current + 1])) {
-        advance();  // Consume the decimal point
-        while (isdigit(peek())) advance();
+        advance(); // Consume the decimal point
+        while (isdigit(peek()))
+            advance();
         addToken(TOK_FLOAT);
     } else {
         // Ensure number doesn't run into a variable name (e.g., "123abc")
@@ -194,11 +196,12 @@ void Lexer::number() {
  */
 void Lexer::identifier() {
     // Consume all alphanumeric characters and underscores
-    while (isalnum(peek()) || peek() == '_') advance();
+    while (isalnum(peek()) || peek() == '_')
+        advance();
 
     std::string text = source.substr(start, current - start);
-    TokenType type = TOK_IDENTIFIER;
-    
+    TokenType type   = TOK_IDENTIFIER;
+
     // Check if the identifier is actually a reserved keyword
     if (keywords.find(text) != keywords.end()) {
         type = keywords[text];
@@ -213,96 +216,119 @@ void Lexer::identifier() {
 void Lexer::scanToken() {
     char c = advance();
     switch (c) {
-        /**
-         * Parentheses
-         */
-        case '(': addToken(TOK_LPAREN); break;
-        case ')': addToken(TOK_RPAREN); break;
-        case '[': addToken(TOK_LBRACKET); break;
-        case ']': addToken(TOK_RBRACKET); break;
+    /**
+     * Parentheses
+     */
+    case '(':
+        addToken(TOK_LPAREN);
+        break;
+    case ')':
+        addToken(TOK_RPAREN);
+        break;
+    case '[':
+        addToken(TOK_LBRACKET);
+        break;
+    case ']':
+        addToken(TOK_RBRACKET);
+        break;
 
-        /**
-         * Special tokens
-         */
-        case ',': addToken(TOK_COMMA); break;
-        case '.': addToken(TOK_DOT); break;
-        case ':': addToken(TOK_COLON); break;
+    /**
+     * Special tokens
+     */
+    case ',':
+        addToken(TOK_COMMA);
+        break;
+    case '.':
+        addToken(TOK_DOT);
+        break;
+    case ':':
+        addToken(TOK_COLON);
+        break;
 
-        /**
-         * Arithmetic tokens
-         */
-        case '+': addToken(TOK_PLUS); break;
-        case '-': addToken(TOK_MINUS); break;
-        case '/':
-            // Division and comments are handled together
-            if (match('/')) {
-                // A comment goes until the end of the line.
-                // We keep advancing until we hit a newline or EOF.
-                // Also don't consume \n since that's consumed elsewhere.
-                while (peek() != '\n' && !isAtEnd()) {
-                    advance();
-                }
-            } else {
-                addToken(TOK_DIVIDE);
-            }
-            break;
-        case '*': addToken(TOK_MULTIPLY); break;
-
-        case '#':
-            // Other method for comments
+    /**
+     * Arithmetic tokens
+     */
+    case '+':
+        addToken(TOK_PLUS);
+        break;
+    case '-':
+        addToken(TOK_MINUS);
+        break;
+    case '/':
+        // Division and comments are handled together
+        if (match('/')) {
+            // A comment goes until the end of the line.
+            // We keep advancing until we hit a newline or EOF.
+            // Also don't consume \n since that's consumed elsewhere.
             while (peek() != '\n' && !isAtEnd()) {
                 advance();
             }
-            break;
+        } else {
+            addToken(TOK_DIVIDE);
+        }
+        break;
+    case '*':
+        addToken(TOK_MULTIPLY);
+        break;
 
-        
-        /**
-         * Assignment and comparisons
-         */
-        case '=':
-            // Equality and assignments handled together
-            addToken(match('=') ? TOK_EQUAL : TOK_ASSIGN);
-            break;
-        case '<':
-            // < and <= handled together
-            addToken(match('=') ? TOK_LT_OR_EQ : TOK_LESS_THAN);
-            break;
-        case '>':
-            // > and >= handled together
-            addToken(match('=') ? TOK_GT_OR_EQ : TOK_GREATER_THAN);
-            break;
-        
-        /**
-         * Skipped bytes
-         */
-        case ' ':
-        case '\r':
-        case '\t':
-            break;
-        case '\n':
-            line++;
-            break;
-        
-        /**
-         * String handling
-         */
-        case '"': string('"'); break;
-        case '\'': string('\''); break;
+    case '#':
+        // Other method for comments
+        while (peek() != '\n' && !isAtEnd()) {
+            advance();
+        }
+        break;
 
-        default:
-            if (isdigit(c)) {
-                // Ints e.g. 123
-                number();
-            } else if (isalpha(c) || c == '_') {
-                // Identifiers
-                identifier();
-            } else {
-                // Bad character
-                std::string msg = "Unexpected character '";
-                msg += c;
-                msg += "'.";
-                reportError(ErrorType::Syntax, msg);
-            }
-            break;
+    /**
+     * Assignment and comparisons
+     */
+    case '=':
+        // Equality and assignments handled together
+        addToken(match('=') ? TOK_EQUAL : TOK_ASSIGN);
+        break;
+    case '<':
+        // < and <= handled together
+        addToken(match('=') ? TOK_LT_OR_EQ : TOK_LESS_THAN);
+        break;
+    case '>':
+        // > and >= handled together
+        addToken(match('=') ? TOK_GT_OR_EQ : TOK_GREATER_THAN);
+        break;
+
+    /**
+     * Skipped bytes
+     */
+    case ' ':
+    case '\r':
+    case '\t':
+        break;
+    case '\n':
+        line++;
+        break;
+
+    /**
+     * String handling
+     */
+    case '"':
+        string('"');
+        break;
+    case '\'':
+        string('\'');
+        break;
+
+    default:
+        if (isdigit(c)) {
+            // Ints e.g. 123
+            number();
+        } else if (isalpha(c) || c == '_') {
+            // Identifiers
+            identifier();
+        } else {
+            // Bad character
+            std::string msg = "Unexpected character '";
+            msg += c;
+            msg += "'.";
+            reportError(ErrorType::Syntax, msg);
+        }
+        break;
     }
 }

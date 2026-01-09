@@ -7,13 +7,13 @@
  * @param source Original source code for error context
  * @param reporter Error reporting utility
  */
-Parser::Parser(const std::vector<Token>& tokens, const std::string& source, ErrorReporter& reporter) 
-    : tokens(tokens), source(source), reporter(reporter) {}
-
+Parser::Parser(const std::vector<Token> &tokens, const std::string &source, ErrorReporter &reporter)
+    : tokens(tokens), source(source), reporter(reporter) {
+}
 
 // ============================================================
 // Debug Tracing
-// 
+//
 // Traces entry and exit of parsing functions.
 // ============================================================
 
@@ -21,7 +21,7 @@ Parser::Parser(const std::vector<Token>& tokens, const std::string& source, Erro
  * Log parser function entry for debugging
  * Only output if TRACE is enabled
  */
-void Parser::traceEnter(const std::string& name) {
+void Parser::traceEnter(const std::string &name) {
     if (TRACE) {
         std::cerr << "[Parse] > " << name << " @ token: " << peek().lexeme << std::endl;
     }
@@ -30,7 +30,7 @@ void Parser::traceEnter(const std::string& name) {
 /**
  * Log parser function exit for debugging
  */
-void Parser::traceExit(const std::string& name) {
+void Parser::traceExit(const std::string &name) {
     if (TRACE) {
         std::cerr << "[Parse] < " << name << std::endl;
     }
@@ -48,66 +48,84 @@ std::vector<StmtPtr> Parser::parse() {
 
 // ============================================================
 // Pratt Parsing Engine
-// 
+//
 // Implements operator precedence parsing to correctly handle expressions
 // with different precedence levels (e.g., * binds tighter than +).
-// Processes both prefix operators (literals, identifiers) and infix 
+// Processes both prefix operators (literals, identifiers) and infix
 // operators (binary ops, function calls, member access).
 // ============================================================
 
 ExprPtr Parser::parseExpression(Precedence precedence) {
     advance(); // Move to the prefix token
     Token prefixToken = previous();
-    
+
     // Dispatch to appropriate prefix handler based on token type
     ExprPtr left;
     switch (prefixToken.type) {
-        case TOK_IDENTIFIER: left = variable(); break;
-        case TOK_INTEGER: 
-        case TOK_FLOAT:
-        case TOK_STRING:
-        case TOK_TRUE:
-        case TOK_FALSE:      left = literal(); break;
-        case TOK_LPAREN:     left = grouping(); break;
-        case TOK_LBRACKET:   left = arrayLiteral(); break;
-        case TOK_NEW:        left = newObject(); break;
-        // Handle unary minus (-5)
-        case TOK_MINUS:      
-            // Recursively parse high precedence (unary binds tight)
-            left = std::make_unique<BinaryExpr>(
-                std::make_unique<LiteralExpr>(Token{TOK_INTEGER, "0", prefixToken.line}),
-                prefixToken,
-                parseExpression(PREC_CALL) // unary hack for -x
-            );
-            break;
-        default:
-            errorAt(prefixToken, "Expected expression.");
-            return nullptr;
+    case TOK_IDENTIFIER:
+        left = variable();
+        break;
+    case TOK_INTEGER:
+    case TOK_FLOAT:
+    case TOK_STRING:
+    case TOK_TRUE:
+    case TOK_FALSE:
+        left = literal();
+        break;
+    case TOK_LPAREN:
+        left = grouping();
+        break;
+    case TOK_LBRACKET:
+        left = arrayLiteral();
+        break;
+    case TOK_NEW:
+        left = newObject();
+        break;
+    // Handle unary minus (-5)
+    case TOK_MINUS:
+        // Recursively parse high precedence (unary binds tight)
+        left = std::make_unique<BinaryExpr>(
+            std::make_unique<LiteralExpr>(Token{TOK_INTEGER, "0", prefixToken.line}), prefixToken,
+            parseExpression(PREC_CALL) // unary hack for -x
+        );
+        break;
+    default:
+        errorAt(prefixToken, "Expected expression.");
+        return nullptr;
     }
 
     // Process infix operators while they have higher precedence than context
     // This implements left-associativity for operators with same precedence
     while (precedence < getPrecedence(peek().type)) {
         Token infixToken = advance();
-        
+
         switch (infixToken.type) {
-            case TOK_PLUS:
-            case TOK_MINUS:
-            case TOK_MULTIPLY:
-            case TOK_DIVIDE:
-            case TOK_EQUAL:
-            case TOK_GREATER_THAN:
-            case TOK_GT_OR_EQ:
-            case TOK_LESS_THAN:
-            case TOK_LT_OR_EQ:
-            case TOK_IN:
-                left = binary(std::move(left));
-                break;
-            case TOK_LPAREN:   left = call(std::move(left)); break;
-            case TOK_DOT:      left = dot(std::move(left)); break;
-            case TOK_LBRACKET: left = subscript(std::move(left)); break;
-            case TOK_ASSIGN:   left = assignment(std::move(left)); break;
-            default: return left;
+        case TOK_PLUS:
+        case TOK_MINUS:
+        case TOK_MULTIPLY:
+        case TOK_DIVIDE:
+        case TOK_EQUAL:
+        case TOK_GREATER_THAN:
+        case TOK_GT_OR_EQ:
+        case TOK_LESS_THAN:
+        case TOK_LT_OR_EQ:
+        case TOK_IN:
+            left = binary(std::move(left));
+            break;
+        case TOK_LPAREN:
+            left = call(std::move(left));
+            break;
+        case TOK_DOT:
+            left = dot(std::move(left));
+            break;
+        case TOK_LBRACKET:
+            left = subscript(std::move(left));
+            break;
+        case TOK_ASSIGN:
+            left = assignment(std::move(left));
+            break;
+        default:
+            return left;
         }
     }
 
@@ -120,27 +138,34 @@ Parser::Precedence Parser::getPrecedence(TokenType type) {
      * Used by Pratt parser to determine parsing order
      */
     switch (type) {
-        case TOK_ASSIGN:       return PREC_ASSIGNMENT;
-        case TOK_EQUAL:        return PREC_EQUALITY;
-        case TOK_LESS_THAN:
-        case TOK_GREATER_THAN:
-        case TOK_GT_OR_EQ:
-        case TOK_LT_OR_EQ:
-        case TOK_IN:           return PREC_COMPARISON;
-        case TOK_PLUS:
-        case TOK_MINUS:        return PREC_TERM;
-        case TOK_MULTIPLY:
-        case TOK_DIVIDE:       return PREC_FACTOR;
-        case TOK_DOT:
-        case TOK_LPAREN:
-        case TOK_LBRACKET:     return PREC_CALL;
-        default:               return PREC_NONE;
+    case TOK_ASSIGN:
+        return PREC_ASSIGNMENT;
+    case TOK_EQUAL:
+        return PREC_EQUALITY;
+    case TOK_LESS_THAN:
+    case TOK_GREATER_THAN:
+    case TOK_GT_OR_EQ:
+    case TOK_LT_OR_EQ:
+    case TOK_IN:
+        return PREC_COMPARISON;
+    case TOK_PLUS:
+    case TOK_MINUS:
+        return PREC_TERM;
+    case TOK_MULTIPLY:
+    case TOK_DIVIDE:
+        return PREC_FACTOR;
+    case TOK_DOT:
+    case TOK_LPAREN:
+    case TOK_LBRACKET:
+        return PREC_CALL;
+    default:
+        return PREC_NONE;
     }
 }
 
 // ============================================================
 // Expression Parselets
-// 
+//
 // Each parselet handles a specific type of expression syntax.
 // Prefix parselets handle the start of an expression.
 // Infix parselets handle operations with a left operand.
@@ -215,7 +240,7 @@ ExprPtr Parser::binary(ExprPtr left) {
     // Parse the right side with higher precedence for right-associative,
     // or same+1 for left-associative. Standard math is left-associative.
     Precedence prec = getPrecedence(op.type);
-    ExprPtr right = parseExpression((Precedence)(prec + 1)); 
+    ExprPtr right   = parseExpression((Precedence) (prec + 1));
     return std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
 }
 
@@ -262,11 +287,10 @@ ExprPtr Parser::subscript(ExprPtr left) {
 ExprPtr Parser::assignment(ExprPtr left) {
     // Right associative, so we parse everything to the right
     ExprPtr value = parseExpression(PREC_NONE);
-    
+
     // Left side must be a valid assignment target
-    if (!dynamic_cast<VariableExpr*>(left.get()) &&
-        !dynamic_cast<GetExpr*>(left.get()) &&
-        !dynamic_cast<ArrayAccessExpr*>(left.get())) {
+    if (!dynamic_cast<VariableExpr *>(left.get()) && !dynamic_cast<GetExpr *>(left.get()) &&
+        !dynamic_cast<ArrayAccessExpr *>(left.get())) {
         errorAt(previous(), "Invalid assignment target.");
         return nullptr;
     }
@@ -276,7 +300,7 @@ ExprPtr Parser::assignment(ExprPtr left) {
 
 // ============================================================
 // Statement Parsing (Recursive Descent)
-// 
+//
 // Handles top-level and block-level statements.
 // Uses recursive descent for clarity and straightforward error recovery.
 // ============================================================
@@ -298,7 +322,7 @@ StmtPtr Parser::declaration() {
         }
         traceExit("declaration");
         return statement();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         // Synchronize to next valid statement to prevent cascading errors
         synchronize();
         return nullptr;
@@ -308,7 +332,7 @@ StmtPtr Parser::declaration() {
 /**
  * Class declaration
  * Parses: CLASS name [INHERITS superclass]
- *         [ATTRIBUTES ...] 
+ *         [ATTRIBUTES ...]
  *         [METHODS methodList]
  *         END name
  */
@@ -316,9 +340,10 @@ StmtPtr Parser::classDeclaration() {
     // Start parsing class
     traceEnter("classDeclaration");
     Token name = consume(TOK_IDENTIFIER, "Expected class name.");
-    if (TRACE) std::cerr << "[Parse]   class: " << name.lexeme << std::endl;
+    if (TRACE)
+        std::cerr << "[Parse]   class: " << name.lexeme << std::endl;
     Token superclass{TOK_EOF, "", 0};
-    
+
     // Inheritance
     if (match(TOK_INHERITS)) {
         superclass = consume(TOK_IDENTIFIER, "Expected superclass name.");
@@ -326,21 +351,23 @@ StmtPtr Parser::classDeclaration() {
 
     // Attributes (Implicit or explicitly listed)
     if (match(TOK_ATTRIBUTES)) {
-        if (check(TOK_COLON)) advance(); 
+        if (check(TOK_COLON))
+            advance();
         // We scan attributes until we hit METHODS or END
         while (!check(TOK_METHODS) && !check(TOK_END) && !isAtEnd()) {
             // Attributes are declared by just assigning
-             consume(TOK_IDENTIFIER, "Expected attribute name.");
-             if (match(TOK_ASSIGN)) {
-                 parseExpression(PREC_NONE);
-             }
+            consume(TOK_IDENTIFIER, "Expected attribute name.");
+            if (match(TOK_ASSIGN)) {
+                parseExpression(PREC_NONE);
+            }
         }
     }
 
     // Construct method list
     std::vector<StmtPtr> methods;
     if (match(TOK_METHODS)) {
-        if (check(TOK_COLON)) advance();
+        if (check(TOK_COLON))
+            advance();
         while (!check(TOK_END) && !isAtEnd()) {
             methods.push_back(functionDeclaration());
         }
@@ -348,7 +375,7 @@ StmtPtr Parser::classDeclaration() {
 
     consume(TOK_END, "Expected 'END' after class body.");
     Token endName = consume(TOK_IDENTIFIER, "Expected class name after 'END'.");
-    
+
     // Validate name.lexeme == endName.lexeme
     if (name.lexeme != endName.lexeme) {
         errorAt(endName, "Class name after 'END' does not match class declaration.");
@@ -375,9 +402,10 @@ StmtPtr Parser::functionDeclaration() {
 
     // Construct function name
     Token name = consume(TOK_IDENTIFIER, "Expected function name.");
-    if (TRACE) std::cerr << "[Parse]   function: " << name.lexeme << std::endl;
+    if (TRACE)
+        std::cerr << "[Parse]   function: " << name.lexeme << std::endl;
     consume(TOK_LPAREN, "Expected '('.");
-    
+
     // Construct parameters list
     std::vector<Token> params;
     if (!check(TOK_RPAREN)) {
@@ -424,7 +452,7 @@ StmtPtr Parser::statement() {
         traceExit("statement");
         return ifStatement();
     }
-    
+
     ExprPtr expr = parseExpression(PREC_NONE);
     traceExit("statement");
     return std::make_unique<ExpressionStmt>(std::move(expr));
@@ -438,10 +466,10 @@ StmtPtr Parser::ifStatement() {
     traceEnter("ifStatement");
     ExprPtr condition = parseExpression(PREC_NONE);
     consume(TOK_THEN, "Expected 'THEN' after if condition.");
-    
+
     std::vector<StmtPtr> thenBranch;
     std::vector<StmtPtr> elseBranch;
-    
+
     while (!check(TOK_ELSE) && !check(TOK_END) && !isAtEnd()) {
         thenBranch.push_back(statement());
     }
@@ -456,7 +484,8 @@ StmtPtr Parser::ifStatement() {
     consume(TOK_IF, "Expected 'IF' after 'END'.");
     traceExit("ifStatement");
 
-    return std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+    return std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch),
+                                    std::move(elseBranch));
 }
 
 /**
@@ -522,7 +551,8 @@ std::vector<StmtPtr> Parser::block() {
  * Advance to next token and return the previous one
  */
 Token Parser::advance() {
-    if (!isAtEnd()) current++;
+    if (!isAtEnd())
+        current++;
     return previous();
 }
 
@@ -551,7 +581,8 @@ Token Parser::previous() {
  * Check if current token matches given type
  */
 bool Parser::check(TokenType type) {
-    if (isAtEnd()) return false;
+    if (isAtEnd())
+        return false;
     return peek().type == type;
 }
 
@@ -570,8 +601,9 @@ bool Parser::match(TokenType type) {
  * Consume a token of expected type or report an error
  */
 Token Parser::consume(TokenType type, std::string message) {
-    if (check(type)) return advance();
-    
+    if (check(type))
+        return advance();
+
     errorAt(peek(), message);
     return peek();
 }
@@ -579,21 +611,20 @@ Token Parser::consume(TokenType type, std::string message) {
 /**
  * Report an error at a specific token with source context
  */
-void Parser::errorAt(Token token, const std::string& message) {
+void Parser::errorAt(Token token, const std::string &message) {
     if (token.type == TOK_EOF) {
-        reporter.report(
-            ErrorType::Syntax, token.line, 0, message + " at end", ""
-        );
+        reporter.report(ErrorType::Syntax, token.line, 0, message + " at end", "");
         return;
     }
 
     // Find the start index of the line in the source string
     // Since Token only stores line number, we scan source to find the Nth line.
     size_t lineStart = 0;
-    int currentLine = 1;
-    
+    int currentLine  = 1;
+
     while (currentLine < token.line && lineStart < source.length()) {
-        if (source[lineStart] == '\n') currentLine++;
+        if (source[lineStart] == '\n')
+            currentLine++;
         lineStart++;
     }
 
@@ -607,10 +638,10 @@ void Parser::errorAt(Token token, const std::string& message) {
     std::string lineStr = source.substr(lineStart, lineEnd - lineStart);
 
     // Calculate column using heuristic
-    // Since Token lacks 'column' or 'start_index', we search for the lexeme 
+    // Since Token lacks 'column' or 'start_index', we search for the lexeme
     // within the line to approximate the caret position.
     size_t column = 0;
-    size_t found = lineStr.find(token.lexeme);
+    size_t found  = lineStr.find(token.lexeme);
     if (found != std::string::npos) {
         column = found;
     }
@@ -623,18 +654,19 @@ void Parser::synchronize() {
     advance();
 
     while (!isAtEnd()) {
-        if (previous().type == TOK_END) return; // 'END' often finishes blocks
+        if (previous().type == TOK_END)
+            return; // 'END' often finishes blocks
 
         switch (peek().type) {
-            case TOK_CLASS:
-            case TOK_FUNCTION:
-            case TOK_IF:
-            case TOK_WHILE:
-            case TOK_PRINT:
-            case TOK_RETURN:
-                return; // Statement boundaries
-            default:
-                break;
+        case TOK_CLASS:
+        case TOK_FUNCTION:
+        case TOK_IF:
+        case TOK_WHILE:
+        case TOK_PRINT:
+        case TOK_RETURN:
+            return; // Statement boundaries
+        default:
+            break;
         }
 
         advance();

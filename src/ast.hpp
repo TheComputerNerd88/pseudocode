@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
-#include <string>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "lexer.hpp"
 
@@ -36,16 +36,16 @@ struct ClassStmt;
  * Defines the contract for operations that traverse Expression nodes.
  */
 struct ExprVisitor {
-    virtual ~ExprVisitor() = default;
-    virtual void visitLiteralExpr(LiteralExpr* expr) = 0;
-    virtual void visitVariableExpr(VariableExpr* expr) = 0;
-    virtual void visitAssignExpr(AssignExpr* expr) = 0;
-    virtual void visitBinaryExpr(BinaryExpr* expr) = 0;
-    virtual void visitCallExpr(CallExpr* expr) = 0;
-    virtual void visitGetExpr(GetExpr* expr) = 0;
-    virtual void visitArrayAccessExpr(ArrayAccessExpr* expr) = 0;
-    virtual void visitArrayLitExpr(ArrayLitExpr* expr) = 0;
-    virtual void visitNewExpr(NewExpr* expr) = 0;
+    virtual ~ExprVisitor()                                   = default;
+    virtual void visitLiteralExpr(LiteralExpr *expr)         = 0;
+    virtual void visitVariableExpr(VariableExpr *expr)       = 0;
+    virtual void visitAssignExpr(AssignExpr *expr)           = 0;
+    virtual void visitBinaryExpr(BinaryExpr *expr)           = 0;
+    virtual void visitCallExpr(CallExpr *expr)               = 0;
+    virtual void visitGetExpr(GetExpr *expr)                 = 0;
+    virtual void visitArrayAccessExpr(ArrayAccessExpr *expr) = 0;
+    virtual void visitArrayLitExpr(ArrayLitExpr *expr)       = 0;
+    virtual void visitNewExpr(NewExpr *expr)                 = 0;
 };
 
 /**
@@ -53,15 +53,15 @@ struct ExprVisitor {
  * Defines the contract for operations that traverse Statement nodes.
  */
 struct StmtVisitor {
-    virtual ~StmtVisitor() = default;
-    virtual void visitExpressionStmt(ExpressionStmt* stmt) = 0;
-    virtual void visitPrintStmt(PrintStmt* stmt) = 0;
-    virtual void visitReturnStmt(ReturnStmt* stmt) = 0;
-    virtual void visitBlockStmt(BlockStmt* stmt) = 0;
-    virtual void visitIfStmt(IfStmt* stmt) = 0;
-    virtual void visitWhileStmt(WhileStmt* stmt) = 0;
-    virtual void visitFunctionStmt(FunctionStmt* stmt) = 0;
-    virtual void visitClassStmt(ClassStmt* stmt) = 0;
+    virtual ~StmtVisitor()                                 = default;
+    virtual void visitExpressionStmt(ExpressionStmt *stmt) = 0;
+    virtual void visitPrintStmt(PrintStmt *stmt)           = 0;
+    virtual void visitReturnStmt(ReturnStmt *stmt)         = 0;
+    virtual void visitBlockStmt(BlockStmt *stmt)           = 0;
+    virtual void visitIfStmt(IfStmt *stmt)                 = 0;
+    virtual void visitWhileStmt(WhileStmt *stmt)           = 0;
+    virtual void visitFunctionStmt(FunctionStmt *stmt)     = 0;
+    virtual void visitClassStmt(ClassStmt *stmt)           = 0;
 };
 
 // --- Base Classes ---
@@ -72,12 +72,12 @@ struct StmtVisitor {
  */
 struct Expr {
     virtual ~Expr() = default;
-    
+
     /**
      * Dispatches the specific visit method on the visitor
      * @param visitor The visitor executing an operation
      */
-    virtual void accept(ExprVisitor& visitor) = 0;
+    virtual void accept(ExprVisitor &visitor) = 0;
 };
 
 /**
@@ -86,12 +86,12 @@ struct Expr {
  */
 struct Stmt {
     virtual ~Stmt() = default;
-    
+
     /**
      * Dispatches the specific visit method on the visitor
      * @param visitor The visitor executing an operation
      */
-    virtual void accept(StmtVisitor& visitor) = 0;
+    virtual void accept(StmtVisitor &visitor) = 0;
 };
 
 using ExprPtr = std::unique_ptr<Expr>;
@@ -104,9 +104,12 @@ using StmtPtr = std::unique_ptr<Stmt>;
  * Represents constant values like numbers, strings, and booleans.
  */
 struct LiteralExpr : Expr {
-    Token token; 
-    LiteralExpr(Token t) : token(t) {}
-    void accept(ExprVisitor& visitor) override { visitor.visitLiteralExpr(this); }
+    Token token;
+    LiteralExpr(Token t) : token(t) {
+    }
+    void accept(ExprVisitor &visitor) override {
+        visitor.visitLiteralExpr(this);
+    }
 };
 
 /**
@@ -115,8 +118,11 @@ struct LiteralExpr : Expr {
  */
 struct VariableExpr : Expr {
     Token name;
-    VariableExpr(Token n) : name(n) {}
-    void accept(ExprVisitor& visitor) override { visitor.visitVariableExpr(this); }
+    VariableExpr(Token n) : name(n) {
+    }
+    void accept(ExprVisitor &visitor) override {
+        visitor.visitVariableExpr(this);
+    }
 };
 
 /**
@@ -126,8 +132,11 @@ struct VariableExpr : Expr {
 struct AssignExpr : Expr {
     ExprPtr target;
     ExprPtr value;
-    AssignExpr(ExprPtr t, ExprPtr v) : target(std::move(t)), value(std::move(v)) {}
-    void accept(ExprVisitor& visitor) override { visitor.visitAssignExpr(this); }
+    AssignExpr(ExprPtr t, ExprPtr v) : target(std::move(t)), value(std::move(v)) {
+    }
+    void accept(ExprVisitor &visitor) override {
+        visitor.visitAssignExpr(this);
+    }
 };
 
 /**
@@ -138,9 +147,11 @@ struct BinaryExpr : Expr {
     ExprPtr left;
     Token op;
     ExprPtr right;
-    BinaryExpr(ExprPtr l, Token o, ExprPtr r) 
-        : left(std::move(l)), op(o), right(std::move(r)) {}
-    void accept(ExprVisitor& visitor) override { visitor.visitBinaryExpr(this); }
+    BinaryExpr(ExprPtr l, Token o, ExprPtr r) : left(std::move(l)), op(o), right(std::move(r)) {
+    }
+    void accept(ExprVisitor &visitor) override {
+        visitor.visitBinaryExpr(this);
+    }
 };
 
 /**
@@ -150,9 +161,11 @@ struct BinaryExpr : Expr {
 struct CallExpr : Expr {
     ExprPtr callee;
     std::vector<ExprPtr> args;
-    CallExpr(ExprPtr c, std::vector<ExprPtr> a) 
-        : callee(std::move(c)), args(std::move(a)) {}
-    void accept(ExprVisitor& visitor) override { visitor.visitCallExpr(this); }
+    CallExpr(ExprPtr c, std::vector<ExprPtr> a) : callee(std::move(c)), args(std::move(a)) {
+    }
+    void accept(ExprVisitor &visitor) override {
+        visitor.visitCallExpr(this);
+    }
 };
 
 /**
@@ -162,8 +175,11 @@ struct CallExpr : Expr {
 struct GetExpr : Expr {
     ExprPtr object;
     Token name;
-    GetExpr(ExprPtr o, Token n) : object(std::move(o)), name(n) {}
-    void accept(ExprVisitor& visitor) override { visitor.visitGetExpr(this); }
+    GetExpr(ExprPtr o, Token n) : object(std::move(o)), name(n) {
+    }
+    void accept(ExprVisitor &visitor) override {
+        visitor.visitGetExpr(this);
+    }
 };
 
 /**
@@ -173,8 +189,11 @@ struct GetExpr : Expr {
 struct ArrayAccessExpr : Expr {
     ExprPtr array;
     ExprPtr index;
-    ArrayAccessExpr(ExprPtr a, ExprPtr i) : array(std::move(a)), index(std::move(i)) {}
-    void accept(ExprVisitor& visitor) override { visitor.visitArrayAccessExpr(this); }
+    ArrayAccessExpr(ExprPtr a, ExprPtr i) : array(std::move(a)), index(std::move(i)) {
+    }
+    void accept(ExprVisitor &visitor) override {
+        visitor.visitArrayAccessExpr(this);
+    }
 };
 
 /**
@@ -183,8 +202,11 @@ struct ArrayAccessExpr : Expr {
  */
 struct ArrayLitExpr : Expr {
     std::vector<ExprPtr> elements;
-    ArrayLitExpr(std::vector<ExprPtr> e) : elements(std::move(e)) {}
-    void accept(ExprVisitor& visitor) override { visitor.visitArrayLitExpr(this); }
+    ArrayLitExpr(std::vector<ExprPtr> e) : elements(std::move(e)) {
+    }
+    void accept(ExprVisitor &visitor) override {
+        visitor.visitArrayLitExpr(this);
+    }
 };
 
 /**
@@ -194,8 +216,11 @@ struct ArrayLitExpr : Expr {
 struct NewExpr : Expr {
     Token className;
     std::vector<ExprPtr> args;
-    NewExpr(Token c, std::vector<ExprPtr> a) : className(c), args(std::move(a)) {}
-    void accept(ExprVisitor& visitor) override { visitor.visitNewExpr(this); }
+    NewExpr(Token c, std::vector<ExprPtr> a) : className(c), args(std::move(a)) {
+    }
+    void accept(ExprVisitor &visitor) override {
+        visitor.visitNewExpr(this);
+    }
 };
 
 // --- Statements Implementations ---
@@ -206,8 +231,11 @@ struct NewExpr : Expr {
  */
 struct ExpressionStmt : Stmt {
     ExprPtr expression;
-    ExpressionStmt(ExprPtr e) : expression(std::move(e)) {}
-    void accept(StmtVisitor& visitor) override { visitor.visitExpressionStmt(this); }
+    ExpressionStmt(ExprPtr e) : expression(std::move(e)) {
+    }
+    void accept(StmtVisitor &visitor) override {
+        visitor.visitExpressionStmt(this);
+    }
 };
 
 /**
@@ -216,8 +244,11 @@ struct ExpressionStmt : Stmt {
  */
 struct PrintStmt : Stmt {
     ExprPtr expression;
-    PrintStmt(ExprPtr e) : expression(std::move(e)) {}
-    void accept(StmtVisitor& visitor) override { visitor.visitPrintStmt(this); }
+    PrintStmt(ExprPtr e) : expression(std::move(e)) {
+    }
+    void accept(StmtVisitor &visitor) override {
+        visitor.visitPrintStmt(this);
+    }
 };
 
 /**
@@ -226,8 +257,11 @@ struct PrintStmt : Stmt {
  */
 struct ReturnStmt : Stmt {
     ExprPtr value;
-    ReturnStmt(ExprPtr v) : value(std::move(v)) {}
-    void accept(StmtVisitor& visitor) override { visitor.visitReturnStmt(this); }
+    ReturnStmt(ExprPtr v) : value(std::move(v)) {
+    }
+    void accept(StmtVisitor &visitor) override {
+        visitor.visitReturnStmt(this);
+    }
 };
 
 /**
@@ -236,8 +270,11 @@ struct ReturnStmt : Stmt {
  */
 struct BlockStmt : Stmt {
     std::vector<StmtPtr> statements;
-    BlockStmt(std::vector<StmtPtr> s) : statements(std::move(s)) {}
-    void accept(StmtVisitor& visitor) override { visitor.visitBlockStmt(this); }
+    BlockStmt(std::vector<StmtPtr> s) : statements(std::move(s)) {
+    }
+    void accept(StmtVisitor &visitor) override {
+        visitor.visitBlockStmt(this);
+    }
 };
 
 /**
@@ -247,10 +284,13 @@ struct BlockStmt : Stmt {
 struct IfStmt : Stmt {
     ExprPtr condition;
     std::vector<StmtPtr> thenBranch;
-    std::vector<StmtPtr> elseBranch; 
+    std::vector<StmtPtr> elseBranch;
     IfStmt(ExprPtr c, std::vector<StmtPtr> t, std::vector<StmtPtr> e)
-        : condition(std::move(c)), thenBranch(std::move(t)), elseBranch(std::move(e)) {}
-    void accept(StmtVisitor& visitor) override { visitor.visitIfStmt(this); }
+        : condition(std::move(c)), thenBranch(std::move(t)), elseBranch(std::move(e)) {
+    }
+    void accept(StmtVisitor &visitor) override {
+        visitor.visitIfStmt(this);
+    }
 };
 
 /**
@@ -260,8 +300,11 @@ struct IfStmt : Stmt {
 struct WhileStmt : Stmt {
     ExprPtr condition;
     std::vector<StmtPtr> body;
-    WhileStmt(ExprPtr c, std::vector<StmtPtr> b) : condition(std::move(c)), body(std::move(b)) {}
-    void accept(StmtVisitor& visitor) override { visitor.visitWhileStmt(this); }
+    WhileStmt(ExprPtr c, std::vector<StmtPtr> b) : condition(std::move(c)), body(std::move(b)) {
+    }
+    void accept(StmtVisitor &visitor) override {
+        visitor.visitWhileStmt(this);
+    }
 };
 
 /**
@@ -273,8 +316,11 @@ struct FunctionStmt : Stmt {
     std::vector<Token> params;
     std::vector<StmtPtr> body;
     FunctionStmt(Token n, std::vector<Token> p, std::vector<StmtPtr> b)
-        : name(n), params(p), body(std::move(b)) {}
-    void accept(StmtVisitor& visitor) override { visitor.visitFunctionStmt(this); }
+        : name(n), params(p), body(std::move(b)) {
+    }
+    void accept(StmtVisitor &visitor) override {
+        visitor.visitFunctionStmt(this);
+    }
 };
 
 /**
@@ -286,6 +332,9 @@ struct ClassStmt : Stmt {
     Token superclass;
     std::vector<StmtPtr> methods;
     ClassStmt(Token n, Token s, std::vector<StmtPtr> m)
-        : name(n), superclass(s), methods(std::move(m)) {}
-    void accept(StmtVisitor& visitor) override { visitor.visitClassStmt(this); }
+        : name(n), superclass(s), methods(std::move(m)) {
+    }
+    void accept(StmtVisitor &visitor) override {
+        visitor.visitClassStmt(this);
+    }
 };

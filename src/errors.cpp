@@ -4,11 +4,10 @@
  * Berate the user because they had an error
  */
 void printAtarMessage() {
-    std::cout << C_RED << "[SCSA] Your ATAR is cooked, -99999 marks." <<
-        std::endl << "[SCSA] Congratulations, you are the first student" <<
-        " to ever get a negative study score! 😭" << std::endl <<
-        "[SCSA] Say goodbye to your future. L + ratio 😂 😂"
-        << C_RESET << std::endl;
+    std::cout << C_RED << "[SCSA] Your ATAR is cooked, -99999 marks." << std::endl
+              << "[SCSA] Congratulations, you are the first student"
+              << " to ever get a negative study score! 😭" << std::endl
+              << "[SCSA] Say goodbye to your future. L + ratio 😂 😂" << C_RESET << std::endl;
 }
 
 /**
@@ -16,7 +15,8 @@ void printAtarMessage() {
  * Stores a reference to the current interpreter stage for error reporting
  * @param stageRef Reference to the current InterpreterStage
  */
-ErrorReporter::ErrorReporter(InterpreterStage& stageRef) : stage(stageRef) {}
+ErrorReporter::ErrorReporter(InterpreterStage &stageRef) : stage(stageRef) {
+}
 
 /**
  * Map error types to human-readable labels
@@ -25,10 +25,14 @@ ErrorReporter::ErrorReporter(InterpreterStage& stageRef) : stage(stageRef) {}
  */
 std::string ErrorReporter::getErrorLabel(ErrorType type) {
     switch (type) {
-        case ErrorType::Syntax:     return "Syntax Error";
-        case ErrorType::Type:       return "Type Error";
-        case ErrorType::Runtime:    return "Runtime Error";
-        default:                    return "Unknown Error";
+    case ErrorType::Syntax:
+        return "Syntax Error";
+    case ErrorType::Type:
+        return "Type Error";
+    case ErrorType::Runtime:
+        return "Runtime Error";
+    default:
+        return "Unknown Error";
     }
 }
 
@@ -38,10 +42,14 @@ std::string ErrorReporter::getErrorLabel(ErrorType type) {
  */
 std::string ErrorReporter::getStageLabel() {
     switch (stage) {
-        case InterpreterStage::Lexing:   return "Lexing";
-        case InterpreterStage::Parsing:  return "Parsing";
-        case InterpreterStage::Runtime:  return "Runtime";
-        default:                         return "Unknown";
+    case InterpreterStage::Lexing:
+        return "Lexing";
+    case InterpreterStage::Parsing:
+        return "Parsing";
+    case InterpreterStage::Runtime:
+        return "Runtime";
+    default:
+        return "Unknown";
     }
 }
 
@@ -54,21 +62,20 @@ std::string ErrorReporter::getStageLabel() {
  * @param message The error message to display
  * @param lineSource The actual source code line containing the error
  */
-void ErrorReporter::report(ErrorType type, size_t line, size_t column,
-        const std::string& message, const std::string& lineSource) {
+void ErrorReporter::report(ErrorType type, size_t line, size_t column, const std::string &message,
+                           const std::string &lineSource) {
     // Print which stage the interpreter is in
     std::string stageLabel = getStageLabel();
-    std::cerr << C_RED << "[An error occurred during stage: '" << stageLabel
-        << "']" << std::endl;
+    std::cerr << C_RED << "[An error occurred during stage: '" << stageLabel << "']" << std::endl;
 
     // Print error message with location information
     std::string label = getErrorLabel(type);
-    std::cerr << "[Line " << C_BLUE << line << ":" << column + 1 <<
-        C_RED << "] " << label << ": " << message << C_RESET << std::endl;
-    
+    std::cerr << "[Line " << C_BLUE << line << ":" << column + 1 << C_RED << "] " << label << ": "
+              << message << C_RESET << std::endl;
+
     // Print the problematic line of code
     std::cerr << C_RED << ">>  " << C_RESET << lineSource << std::endl;
-    
+
     // Generate a pointer string to indicate the exact error position
     std::cerr << "    ";
 

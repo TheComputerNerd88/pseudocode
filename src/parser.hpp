@@ -7,25 +7,21 @@
 
 /**
  * Parser - Converts a stream of tokens into an Abstract Syntax Tree (AST)
- * 
+ *
  * Uses a Pratt parsing algorithm for expressions combined with recursive descent
  * for statements. This hybrid approach allows efficient handling of operator precedence
  * while keeping statement parsing straightforward.
  */
 class Parser {
-public:
+  public:
     /**
      * Parser Constructor
      * @param tokens Vector of tokens from the lexer
      * @param source The original source code (for error context)
      * @param reporter Error reporter for handling parse failures
      */
-    Parser(
-        const std::vector<Token>& tokens,
-        const std::string& source,
-        ErrorReporter& reporter
-    );
-    
+    Parser(const std::vector<Token> &tokens, const std::string &source, ErrorReporter &reporter);
+
     /**
      * Entry point for parsing
      * Parses the entire token stream into top-level statements
@@ -33,12 +29,12 @@ public:
      */
     std::vector<StmtPtr> parse();
 
-private:
-    const std::vector<Token>& tokens;
-    const std::string& source;
-    ErrorReporter& reporter;
-    size_t current = 0;
-    static constexpr bool TRACE = false;  // Set to false to disable tracing
+  private:
+    const std::vector<Token> &tokens;
+    const std::string &source;
+    ErrorReporter &reporter;
+    size_t current              = 0;
+    static constexpr bool TRACE = false; // Set to false to disable tracing
 
     /**
      * Operator Precedence Levels
@@ -47,13 +43,13 @@ private:
      */
     enum Precedence {
         PREC_NONE,
-        PREC_ASSIGNMENT,  // = (lowest precedence)
-        PREC_EQUALITY,    // ==
-        PREC_COMPARISON,  // < > <= >=
-        PREC_TERM,        // + -
-        PREC_FACTOR,      // * /
-        PREC_CALL,        // . () []
-        PREC_PRIMARY      // (highest precedence)
+        PREC_ASSIGNMENT, // = (lowest precedence)
+        PREC_EQUALITY,   // ==
+        PREC_COMPARISON, // < > <= >=
+        PREC_TERM,       // + -
+        PREC_FACTOR,     // * /
+        PREC_CALL,       // . () []
+        PREC_PRIMARY     // (highest precedence)
     };
 
     // --- Token Navigation ---
@@ -65,25 +61,25 @@ private:
     Token previous();
     bool isAtEnd();
     Precedence getPrecedence(TokenType type);
-    
+
     // --- Debug Tracing ---
     /**
      * Log entry into a parsing function for debugging
      */
-    void traceEnter(const std::string& name);
-    
+    void traceEnter(const std::string &name);
+
     /**
      * Log exit from a parsing function for debugging
      */
-    void traceExit(const std::string& name);
+    void traceExit(const std::string &name);
 
     // --- Error Handling ---
     /**
      * Report an error at a specific token with source context
      * Extracts the source line and provides visual feedback
      */
-    void errorAt(Token token, const std::string& message);
-    
+    void errorAt(Token token, const std::string &message);
+
     /**
      * Synchronize parser state after error
      * Discards tokens until a statement boundary is found to prevent cascading errors
@@ -96,54 +92,54 @@ private:
      * Entry point for the recursive descent portion of the parser
      */
     StmtPtr declaration();
-    
+
     /**
      * Parse a class declaration with optional inheritance, attributes, and methods
      */
     StmtPtr classDeclaration();
-    
+
     /**
      * Parse a function declaration with parameters and body
      */
     StmtPtr functionDeclaration();
-    
+
     /**
      * Parse a single statement (if, while, print, return, or expression statement)
      */
     StmtPtr statement();
-    
+
     /**
      * Parse an if-then-else statement
      */
     StmtPtr ifStatement();
-    
+
     /**
      * Parse a while loop with condition and body
      */
     StmtPtr whileStatement();
-    
+
     /**
      * Parse a print statement
      */
     StmtPtr printStatement();
-    
+
     /**
      * Parse a return statement (with optional value)
      */
     StmtPtr returnStatement();
-    
+
     /**
      * Parse a block of statements until a block-terminating keyword (END, ELSE)
      */
     std::vector<StmtPtr> block();
 
     // --- Pratt Expression Parsing ---
-    
+
     /**
      * Signature for prefix parselets (handle start of expression: literals, variables, unary)
      */
     using PrefixFn = std::function<ExprPtr()>;
-    
+
     /**
      * Signature for infix parselets (handle operators with left operand: binary ops, calls)
      */
@@ -160,22 +156,22 @@ private:
      * Parse an identifier or variable reference
      */
     ExprPtr variable();
-    
+
     /**
      * Parse a literal value (number, string, boolean)
      */
     ExprPtr literal();
-    
+
     /**
      * Parse a parenthesized expression (grouping)
      */
     ExprPtr grouping();
-    
+
     /**
      * Parse an array literal [elem1, elem2, ...]
      */
     ExprPtr arrayLiteral();
-    
+
     /**
      * Parse object instantiation (new ClassName(...))
      */
@@ -187,22 +183,22 @@ private:
      * Recursively parses right side with appropriate precedence
      */
     ExprPtr binary(ExprPtr left);
-    
+
     /**
      * Parse a function call (callee(...))
      */
     ExprPtr call(ExprPtr left);
-    
+
     /**
      * Parse member/property access (object.property)
      */
     ExprPtr dot(ExprPtr left);
-    
+
     /**
      * Parse array subscript access (array[index])
      */
     ExprPtr subscript(ExprPtr left);
-    
+
     /**
      * Parse assignment (target = value)
      * Right-associative: a = b = c parses as a = (b = c)

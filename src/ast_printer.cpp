@@ -8,9 +8,9 @@
  * Iterates through a list of statements and triggers the visitor pattern for each.
  * @param statements The vector of statement pointers to process
  */
-void ASTPrinter::print(const std::vector<StmtPtr>& statements) {
+void ASTPrinter::print(const std::vector<StmtPtr> &statements) {
     std::cout << "AST Root" << std::endl;
-    for (const auto& stmt : statements) {
+    for (const auto &stmt : statements) {
         accept(stmt.get());
     }
 }
@@ -20,8 +20,9 @@ void ASTPrinter::print(const std::vector<StmtPtr>& statements) {
  * Checks for null pointers before delegating to the node's accept method.
  * @param expr Raw pointer to the expression node
  */
-void ASTPrinter::accept(Expr* expr) {
-    if (expr) expr->accept(*this);
+void ASTPrinter::accept(Expr *expr) {
+    if (expr)
+        expr->accept(*this);
 }
 
 /**
@@ -29,8 +30,9 @@ void ASTPrinter::accept(Expr* expr) {
  * Checks for null pointers before delegating to the node's accept method.
  * @param stmt Raw pointer to the statement node
  */
-void ASTPrinter::accept(Stmt* stmt) {
-    if (stmt) stmt->accept(*this);
+void ASTPrinter::accept(Stmt *stmt) {
+    if (stmt)
+        stmt->accept(*this);
 }
 
 // --- Statement Visitors ---
@@ -40,7 +42,7 @@ void ASTPrinter::accept(Stmt* stmt) {
  * Prints the class name, optional superclass, and recursively prints methods.
  * @param stmt Pointer to the class statement node
  */
-void ASTPrinter::visitClassStmt(ClassStmt* stmt) {
+void ASTPrinter::visitClassStmt(ClassStmt *stmt) {
     std::cout << indent << "[Class] " << stmt->name.lexeme;
     if (stmt->superclass.type != TOK_EOF) {
         std::cout << " < " << stmt->superclass.lexeme;
@@ -48,7 +50,7 @@ void ASTPrinter::visitClassStmt(ClassStmt* stmt) {
     std::cout << std::endl;
 
     IndentScope scope(*this);
-    for (const auto& method : stmt->methods) {
+    for (const auto &method : stmt->methods) {
         accept(method.get());
     }
 }
@@ -58,7 +60,7 @@ void ASTPrinter::visitClassStmt(ClassStmt* stmt) {
  * Prints the function signature and recursively prints the body statements.
  * @param stmt Pointer to the function statement node
  */
-void ASTPrinter::visitFunctionStmt(FunctionStmt* stmt) {
+void ASTPrinter::visitFunctionStmt(FunctionStmt *stmt) {
     std::cout << indent << "[Function] " << stmt->name.lexeme << "(";
     for (size_t i = 0; i < stmt->params.size(); ++i) {
         std::cout << stmt->params[i].lexeme << (i < stmt->params.size() - 1 ? ", " : "");
@@ -66,7 +68,7 @@ void ASTPrinter::visitFunctionStmt(FunctionStmt* stmt) {
     std::cout << ")" << std::endl;
 
     IndentScope scope(*this);
-    for (const auto& bodyStmt : stmt->body) {
+    for (const auto &bodyStmt : stmt->body) {
         accept(bodyStmt.get());
     }
 }
@@ -77,11 +79,11 @@ void ASTPrinter::visitFunctionStmt(FunctionStmt* stmt) {
  * the 'then' branch, and the optional 'else' branch.
  * @param stmt Pointer to the if-statement node
  */
-void ASTPrinter::visitIfStmt(IfStmt* stmt) {
+void ASTPrinter::visitIfStmt(IfStmt *stmt) {
     std::cout << indent << "[If]" << std::endl;
-    
+
     IndentScope scope(*this);
-    
+
     std::cout << indent << "Condition:" << std::endl;
     {
         IndentScope condScope(*this);
@@ -91,13 +93,15 @@ void ASTPrinter::visitIfStmt(IfStmt* stmt) {
     std::cout << indent << "Then:" << std::endl;
     {
         IndentScope thenScope(*this);
-        for (const auto& st : stmt->thenBranch) accept(st.get());
+        for (const auto &st : stmt->thenBranch)
+            accept(st.get());
     }
 
     if (!stmt->elseBranch.empty()) {
         std::cout << indent << "Else:" << std::endl;
         IndentScope elseScope(*this);
-        for (const auto& st : stmt->elseBranch) accept(st.get());
+        for (const auto &st : stmt->elseBranch)
+            accept(st.get());
     }
 }
 
@@ -106,20 +110,21 @@ void ASTPrinter::visitIfStmt(IfStmt* stmt) {
  * Prints the loop structure, including the condition and the loop body.
  * @param stmt Pointer to the while-statement node
  */
-void ASTPrinter::visitWhileStmt(WhileStmt* stmt) {
+void ASTPrinter::visitWhileStmt(WhileStmt *stmt) {
     std::cout << indent << "[While]" << std::endl;
-    
+
     IndentScope scope(*this);
     std::cout << indent << "Condition:" << std::endl;
     {
         IndentScope condScope(*this);
         accept(stmt->condition.get());
     }
-    
+
     std::cout << indent << "Body:" << std::endl;
     {
         IndentScope bodyScope(*this);
-        for (const auto& st : stmt->body) accept(st.get());
+        for (const auto &st : stmt->body)
+            accept(st.get());
     }
 }
 
@@ -128,7 +133,7 @@ void ASTPrinter::visitWhileStmt(WhileStmt* stmt) {
  * Prints the return marker and recursively prints the return value if present.
  * @param stmt Pointer to the return statement node
  */
-void ASTPrinter::visitReturnStmt(ReturnStmt* stmt) {
+void ASTPrinter::visitReturnStmt(ReturnStmt *stmt) {
     std::cout << indent << "[Return]" << std::endl;
     if (stmt->value) {
         IndentScope scope(*this);
@@ -141,7 +146,7 @@ void ASTPrinter::visitReturnStmt(ReturnStmt* stmt) {
  * Prints the print marker and recursively prints the expression to be printed.
  * @param stmt Pointer to the print statement node
  */
-void ASTPrinter::visitPrintStmt(PrintStmt* stmt) {
+void ASTPrinter::visitPrintStmt(PrintStmt *stmt) {
     std::cout << indent << "[Print]" << std::endl;
     IndentScope scope(*this);
     accept(stmt->expression.get());
@@ -153,7 +158,7 @@ void ASTPrinter::visitPrintStmt(PrintStmt* stmt) {
  * Used for expressions that stand alone as statements (e.g., function calls).
  * @param stmt Pointer to the expression statement node
  */
-void ASTPrinter::visitExpressionStmt(ExpressionStmt* stmt) {
+void ASTPrinter::visitExpressionStmt(ExpressionStmt *stmt) {
     std::cout << indent << "[ExprStmt]" << std::endl;
     IndentScope scope(*this);
     accept(stmt->expression.get());
@@ -164,10 +169,10 @@ void ASTPrinter::visitExpressionStmt(ExpressionStmt* stmt) {
  * Prints the block marker and iterates through the list of statements within the block.
  * @param stmt Pointer to the block statement node
  */
-void ASTPrinter::visitBlockStmt(BlockStmt* stmt) {
+void ASTPrinter::visitBlockStmt(BlockStmt *stmt) {
     std::cout << indent << "[Block]" << std::endl;
     IndentScope scope(*this);
-    for (const auto& s : stmt->statements) {
+    for (const auto &s : stmt->statements) {
         accept(s.get());
     }
 }
@@ -179,7 +184,7 @@ void ASTPrinter::visitBlockStmt(BlockStmt* stmt) {
  * Prints the operator and recursively prints the left and right operands.
  * @param expr Pointer to the binary expression node
  */
-void ASTPrinter::visitBinaryExpr(BinaryExpr* expr) {
+void ASTPrinter::visitBinaryExpr(BinaryExpr *expr) {
     std::cout << indent << "Binary (" << expr->op.lexeme << ")" << std::endl;
     IndentScope scope(*this);
     accept(expr->left.get());
@@ -191,16 +196,16 @@ void ASTPrinter::visitBinaryExpr(BinaryExpr* expr) {
  * Prints the assignment marker, the target (variable), and the value being assigned.
  * @param expr Pointer to the assignment expression node
  */
-void ASTPrinter::visitAssignExpr(AssignExpr* expr) {
+void ASTPrinter::visitAssignExpr(AssignExpr *expr) {
     std::cout << indent << "Assign (=)" << std::endl;
     IndentScope scope(*this);
-    
+
     std::cout << indent << "Target:" << std::endl;
     {
         IndentScope targetScope(*this);
         accept(expr->target.get());
     }
-    
+
     std::cout << indent << "Value:" << std::endl;
     {
         IndentScope valScope(*this);
@@ -213,7 +218,7 @@ void ASTPrinter::visitAssignExpr(AssignExpr* expr) {
  * Prints the raw value of the literal token (e.g., number, string, boolean).
  * @param expr Pointer to the literal expression node
  */
-void ASTPrinter::visitLiteralExpr(LiteralExpr* expr) {
+void ASTPrinter::visitLiteralExpr(LiteralExpr *expr) {
     std::cout << indent << "Literal: " << expr->token.lexeme << std::endl;
 }
 
@@ -222,7 +227,7 @@ void ASTPrinter::visitLiteralExpr(LiteralExpr* expr) {
  * Prints the name of the variable being accessed.
  * @param expr Pointer to the variable expression node
  */
-void ASTPrinter::visitVariableExpr(VariableExpr* expr) {
+void ASTPrinter::visitVariableExpr(VariableExpr *expr) {
     std::cout << indent << "Var: " << expr->name.lexeme << std::endl;
 }
 
@@ -231,20 +236,20 @@ void ASTPrinter::visitVariableExpr(VariableExpr* expr) {
  * Prints the call marker, the callee (function name/object), and the arguments.
  * @param expr Pointer to the call expression node
  */
-void ASTPrinter::visitCallExpr(CallExpr* expr) {
+void ASTPrinter::visitCallExpr(CallExpr *expr) {
     std::cout << indent << "Call" << std::endl;
     IndentScope scope(*this);
-    
+
     std::cout << indent << "Callee:" << std::endl;
     {
         IndentScope calleeScope(*this);
         accept(expr->callee.get());
     }
-    
+
     std::cout << indent << "Args:" << std::endl;
     {
         IndentScope argScope(*this);
-        for (const auto& arg : expr->args) {
+        for (const auto &arg : expr->args) {
             accept(arg.get());
         }
     }
@@ -255,7 +260,7 @@ void ASTPrinter::visitCallExpr(CallExpr* expr) {
  * Prints the property name and the object being accessed (e.g., object.property).
  * @param expr Pointer to the get expression node
  */
-void ASTPrinter::visitGetExpr(GetExpr* expr) {
+void ASTPrinter::visitGetExpr(GetExpr *expr) {
     std::cout << indent << "Get Property: ." << expr->name.lexeme << std::endl;
     IndentScope scope(*this);
     accept(expr->object.get());
@@ -266,16 +271,16 @@ void ASTPrinter::visitGetExpr(GetExpr* expr) {
  * Prints the array access structure, the array expression, and the index expression.
  * @param expr Pointer to the array access expression node
  */
-void ASTPrinter::visitArrayAccessExpr(ArrayAccessExpr* expr) {
+void ASTPrinter::visitArrayAccessExpr(ArrayAccessExpr *expr) {
     std::cout << indent << "Array Index []" << std::endl;
     IndentScope scope(*this);
-    
+
     std::cout << indent << "Array:" << std::endl;
     {
         IndentScope arrScope(*this);
         accept(expr->array.get());
     }
-    
+
     std::cout << indent << "Index:" << std::endl;
     {
         IndentScope idxScope(*this);
@@ -288,10 +293,10 @@ void ASTPrinter::visitArrayAccessExpr(ArrayAccessExpr* expr) {
  * Prints the array definition and recursively prints all elements inside.
  * @param expr Pointer to the array literal expression node
  */
-void ASTPrinter::visitArrayLitExpr(ArrayLitExpr* expr) {
+void ASTPrinter::visitArrayLitExpr(ArrayLitExpr *expr) {
     std::cout << indent << "Array Literal []" << std::endl;
     IndentScope scope(*this);
-    for(const auto& elem : expr->elements) {
+    for (const auto &elem : expr->elements) {
         accept(elem.get());
     }
 }
@@ -301,10 +306,10 @@ void ASTPrinter::visitArrayLitExpr(ArrayLitExpr* expr) {
  * Prints the class instantiation and the constructor arguments.
  * @param expr Pointer to the new expression node
  */
-void ASTPrinter::visitNewExpr(NewExpr* expr) {
+void ASTPrinter::visitNewExpr(NewExpr *expr) {
     std::cout << indent << "New " << expr->className.lexeme << std::endl;
     IndentScope scope(*this);
-    for(const auto& arg : expr->args) {
+    for (const auto &arg : expr->args) {
         accept(arg.get());
     }
 }

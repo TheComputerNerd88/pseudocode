@@ -1,7 +1,3 @@
 #pragma once
 
-enum InterpreterStage {
-    Lexing,
-    Parsing,
-    Runtime
-};
+enum InterpreterStage { Lexing, Parsing, Runtime };

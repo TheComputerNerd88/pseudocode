@@ -7,7 +7,7 @@
  * @return The complete file contents as a string
  * @throws std::runtime_error if the file cannot be opened
  */
-std::string Pseudocode::readFile(const std::string& path) {
+std::string Pseudocode::readFile(const std::string &path) {
     std::ifstream file(path);
     if (!file.is_open()) {
         throw std::runtime_error("Could not open file: " + path);
@@ -23,20 +23,18 @@ std::string Pseudocode::readFile(const std::string& path) {
  * Displays token type, lexeme, and line number for debugging
  * @param tokens The vector of tokens to display
  */
-void Pseudocode::printTokenTable(const std::vector<Token>& tokens) {
+void Pseudocode::printTokenTable(const std::vector<Token> &tokens) {
     // Print table header with column alignment
-    std::cout << std::left << std::setw(20) << "TOKEN TYPE"
-              << std::setw(25) << "LEXEME"
-              << "LINE" << std::endl;
+    std::cout << std::left << std::setw(20) << "TOKEN TYPE" << std::setw(25) << "LEXEME" << "LINE"
+              << std::endl;
     std::cout << std::string(60, '-') << std::endl;
 
     // Print each token as a table row
-    for (const Token& token : tokens) {
-        if (token.type == TOK_EOF) break;  // Don't display EOF token
-        std::cout << std::left << std::setw(20) << token.typeToString()
-                  << std::setw(25)
-                  << (token.lexeme.empty() ? "N/A" : token.lexeme)
-                  << token.line << std::endl;
+    for (const Token &token : tokens) {
+        if (token.type == TOK_EOF)
+            break; // Don't display EOF token
+        std::cout << std::left << std::setw(20) << token.typeToString() << std::setw(25)
+                  << (token.lexeme.empty() ? "N/A" : token.lexeme) << token.line << std::endl;
     }
 }
 
@@ -46,7 +44,7 @@ void Pseudocode::printTokenTable(const std::vector<Token>& tokens) {
  * @param path Path to the pseudocode file to execute
  * @return 0 on success, 1 on error
  */
-int Pseudocode::runFile(const std::string& path) {
+int Pseudocode::runFile(const std::string &path) {
     try {
         std::string source = readFile(path);
 
@@ -69,7 +67,7 @@ int Pseudocode::runFile(const std::string& path) {
         // stage = InterpreterStage::Runtime;
         // Interpreter interpreter = Interpreter(reporter);
         // interpreter.interpret(parser.parse());
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         return 1;
     }
 
@@ -97,9 +95,12 @@ int Pseudocode::runRepl() {
     while (true) {
         // Display prompt and read a line of input
         std::cout << "[SCSA] >> " << std::flush;
-        if (!std::getline(std::cin, line)) break;
-        if (line.empty()) continue;
-        if (line == "exit") break;
+        if (!std::getline(std::cin, line))
+            break;
+        if (line.empty())
+            continue;
+        if (line == "exit")
+            break;
 
         try {
             // Tokenize the input line
@@ -119,7 +120,7 @@ int Pseudocode::runRepl() {
             // stage = InterpreterStage::Runtime;
             // interpreter.interpret(parsed);
 
-        } catch (const std::exception& e) {
+        } catch (const std::exception &e) {
             // Display error without crashing the REPL
             std::cerr << e.what() << std::endl;
         }

@@ -28,26 +28,26 @@ void printAtarMessage();
  * Provides context about where the error occurred in the source code
  */
 class ErrorReporter {
-private:
+  private:
     // Reference to current interpreter stage
-    InterpreterStage& stage;
+    InterpreterStage &stage;
 
     /**
      * Get human-readable error type label
      */
     std::string getErrorLabel(ErrorType type);
-    
+
     /**
      * Get human-readable interpreter stage label
      */
     std::string getStageLabel();
 
-public:
+  public:
     /**
      * Construct error reporter with reference to current stage
      * @param stageRef Reference to the interpreter stage
      */
-    ErrorReporter(InterpreterStage& stageRef);
+    ErrorReporter(InterpreterStage &stageRef);
 
     /**
      * Report an error with full context
@@ -57,6 +57,6 @@ public:
      * @param message The error message to display
      * @param lineSource The source code line containing the error
      */
-    void report(ErrorType type, size_t line, size_t column,
-            const std::string& message, const std::string& lineSource);
+    void report(ErrorType type, size_t line, size_t column, const std::string &message,
+                const std::string &lineSource);
 };
