@@ -1,208 +1,310 @@
 #include "ast_printer.hpp"
-
 #include <iostream>
 
-/**
- * Helper to construct the indentation string for tree visualization
- * Each level adds "  | " to visually show the tree structure
- */
-std::string ASTPrinter::increaseIndent(std::string indent) {
-    return indent + "  | ";
-}
+// --- Entry Point & Helpers ---
 
 /**
- * Entry point for AST printing
- * Prints "AST Root" as the tree header, then recursively prints each top-level statement
+ * Entry point for printing the AST
+ * Iterates through a list of statements and triggers the visitor pattern for each.
+ * @param statements The vector of statement pointers to process
  */
 void ASTPrinter::print(const std::vector<StmtPtr>& statements) {
     std::cout << "AST Root" << std::endl;
     for (const auto& stmt : statements) {
-        printStmt(stmt.get(), "");
+        accept(stmt.get());
     }
 }
 
-// ==========================================
-// Statement Printer
-// 
-// Handles printing of different statement types by dynamic casting
-// and delegating to appropriate output logic
-// ==========================================
-
 /**
- * Recursively print a statement with indentation
- * Dispatches to appropriate printing logic based on statement type
+ * Helper to accept an Expression visitor
+ * Checks for null pointers before delegating to the node's accept method.
+ * @param expr Raw pointer to the expression node
  */
-void ASTPrinter::printStmt(const Stmt* stmt, std::string indent) {
-    std::string childIndent = increaseIndent(indent);
-
-    // Class Declaration
-    if (auto* s = dynamic_cast<const ClassStmt*>(stmt)) {
-        std::cout << indent << "[Class] " << s->name.lexeme;
-        if (s->superclass.type != TOK_EOF) {
-            std::cout << " < " << s->superclass.lexeme;
-        }
-        std::cout << std::endl;
-        for (const auto& method : s->methods) {
-            printStmt(method.get(), childIndent);
-        }
-        return;
-    }
-
-    // Function Declaration
-    if (auto* s = dynamic_cast<const FunctionStmt*>(stmt)) {
-        std::cout << indent << "[Function] " << s->name.lexeme << "(";
-        for (size_t i = 0; i < s->params.size(); ++i) {
-            std::cout << s->params[i].lexeme << (i < s->params.size() - 1 ? ", " : "");
-        }
-        std::cout << ")" << std::endl;
-        for (const auto& bodyStmt : s->body) {
-            printStmt(bodyStmt.get(), childIndent);
-        }
-        return;
-    }
-
-    // If Statement
-    if (auto* s = dynamic_cast<const IfStmt*>(stmt)) {
-        std::cout << indent << "[If]" << std::endl;
-        
-        std::cout << childIndent << "Condition:" << std::endl;
-        printExpr(s->condition.get(), increaseIndent(childIndent));
-
-        std::cout << childIndent << "Then:" << std::endl;
-        for (const auto& st : s->thenBranch) printStmt(st.get(), increaseIndent(childIndent));
-
-        if (!s->elseBranch.empty()) {
-            std::cout << childIndent << "Else:" << std::endl;
-            for (const auto& st : s->elseBranch) printStmt(st.get(), increaseIndent(childIndent));
-        }
-        return;
-    }
-
-    // While Statement
-    if (auto* s = dynamic_cast<const WhileStmt*>(stmt)) {
-        std::cout << indent << "[While]" << std::endl;
-        std::cout << childIndent << "Condition:" << std::endl;
-        printExpr(s->condition.get(), increaseIndent(childIndent));
-        std::cout << childIndent << "Body:" << std::endl;
-        for (const auto& st : s->body) printStmt(st.get(), increaseIndent(childIndent));
-        return;
-    }
-
-    // Return Statement
-    if (auto* s = dynamic_cast<const ReturnStmt*>(stmt)) {
-        std::cout << indent << "[Return]" << std::endl;
-        if (s->value) printExpr(s->value.get(), childIndent);
-        return;
-    }
-
-    // Print Statement
-    if (auto* s = dynamic_cast<const PrintStmt*>(stmt)) {
-        std::cout << indent << "[Print]" << std::endl;
-        printExpr(s->expression.get(), childIndent);
-        return;
-    }
-
-    // Expression Statement
-    if (auto* s = dynamic_cast<const ExpressionStmt*>(stmt)) {
-        std::cout << indent << "[ExprStmt]" << std::endl;
-        printExpr(s->expression.get(), childIndent);
-        return;
-    }
-    
-    std::cout << indent << "[Unknown Stmt]" << std::endl;
+void ASTPrinter::accept(Expr* expr) {
+    if (expr) expr->accept(*this);
 }
 
-// ==========================================
-// Expression Printer
-// 
-// Handles printing of different expression types by dynamic casting
-// and recursively printing sub-expressions with proper indentation
-// ==========================================
+/**
+ * Helper to accept a Statement visitor
+ * Checks for null pointers before delegating to the node's accept method.
+ * @param stmt Raw pointer to the statement node
+ */
+void ASTPrinter::accept(Stmt* stmt) {
+    if (stmt) stmt->accept(*this);
+}
+
+// --- Statement Visitors ---
 
 /**
- * Recursively print an expression with indentation
- * Dispatches to appropriate printing logic based on expression type
+ * Visit a Class Declaration
+ * Prints the class name, optional superclass, and recursively prints methods.
+ * @param stmt Pointer to the class statement node
  */
-void ASTPrinter::printExpr(const Expr* expr, std::string indent) {
-    if (!expr) return;
-    std::string childIndent = increaseIndent(indent);
+void ASTPrinter::visitClassStmt(ClassStmt* stmt) {
+    std::cout << indent << "[Class] " << stmt->name.lexeme;
+    if (stmt->superclass.type != TOK_EOF) {
+        std::cout << " < " << stmt->superclass.lexeme;
+    }
+    std::cout << std::endl;
 
-    // Binary Operation
-    if (auto* e = dynamic_cast<const BinaryExpr*>(expr)) {
-        std::cout << indent << "Binary (" << e->op.lexeme << ")" << std::endl;
-        printExpr(e->left.get(), childIndent);
-        printExpr(e->right.get(), childIndent);
-        return;
+    IndentScope scope(*this);
+    for (const auto& method : stmt->methods) {
+        accept(method.get());
+    }
+}
+
+/**
+ * Visit a Function Declaration
+ * Prints the function signature and recursively prints the body statements.
+ * @param stmt Pointer to the function statement node
+ */
+void ASTPrinter::visitFunctionStmt(FunctionStmt* stmt) {
+    std::cout << indent << "[Function] " << stmt->name.lexeme << "(";
+    for (size_t i = 0; i < stmt->params.size(); ++i) {
+        std::cout << stmt->params[i].lexeme << (i < stmt->params.size() - 1 ? ", " : "");
+    }
+    std::cout << ")" << std::endl;
+
+    IndentScope scope(*this);
+    for (const auto& bodyStmt : stmt->body) {
+        accept(bodyStmt.get());
+    }
+}
+
+/**
+ * Visit an If-Else Statement
+ * Prints the structure of the conditional logic, including the condition,
+ * the 'then' branch, and the optional 'else' branch.
+ * @param stmt Pointer to the if-statement node
+ */
+void ASTPrinter::visitIfStmt(IfStmt* stmt) {
+    std::cout << indent << "[If]" << std::endl;
+    
+    IndentScope scope(*this);
+    
+    std::cout << indent << "Condition:" << std::endl;
+    {
+        IndentScope condScope(*this);
+        accept(stmt->condition.get());
     }
 
-    // Assignment
-    if (auto* e = dynamic_cast<const AssignExpr*>(expr)) {
-        std::cout << indent << "Assign (=)" << std::endl;
-        std::cout << childIndent << "Target:" << std::endl;
-        printExpr(e->target.get(), increaseIndent(childIndent));
-        std::cout << childIndent << "Value:" << std::endl;
-        printExpr(e->value.get(), increaseIndent(childIndent));
-        return;
+    std::cout << indent << "Then:" << std::endl;
+    {
+        IndentScope thenScope(*this);
+        for (const auto& st : stmt->thenBranch) accept(st.get());
     }
 
-    // Literal
-    if (auto* e = dynamic_cast<const LiteralExpr*>(expr)) {
-        std::cout << indent << "Literal: " << e->token.lexeme << std::endl;
-        return;
+    if (!stmt->elseBranch.empty()) {
+        std::cout << indent << "Else:" << std::endl;
+        IndentScope elseScope(*this);
+        for (const auto& st : stmt->elseBranch) accept(st.get());
     }
+}
 
-    // Variable
-    if (auto* e = dynamic_cast<const VariableExpr*>(expr)) {
-        std::cout << indent << "Var: " << e->name.lexeme << std::endl;
-        return;
-    }
-
-    // Function Call
-    if (auto* e = dynamic_cast<const CallExpr*>(expr)) {
-        std::cout << indent << "Call" << std::endl;
-        std::cout << childIndent << "Callee:" << std::endl;
-        printExpr(e->callee.get(), increaseIndent(childIndent));
-        std::cout << childIndent << "Args:" << std::endl;
-        for (const auto& arg : e->args) {
-            printExpr(arg.get(), increaseIndent(childIndent));
-        }
-        return;
-    }
-
-    // Property Access
-    if (auto* e = dynamic_cast<const GetExpr*>(expr)) {
-        std::cout << indent << "Get Property: ." << e->name.lexeme << std::endl;
-        printExpr(e->object.get(), childIndent);
-        return;
-    }
-
-    // Array Subscript
-    if (auto* e = dynamic_cast<const ArrayAccessExpr*>(expr)) {
-        std::cout << indent << "Array Index []" << std::endl;
-        std::cout << childIndent << "Array:" << std::endl;
-        printExpr(e->array.get(), increaseIndent(childIndent));
-        std::cout << childIndent << "Index:" << std::endl;
-        printExpr(e->index.get(), increaseIndent(childIndent));
-        return;
-    }
-
-    // Array Literal
-    if (auto* e = dynamic_cast<const ArrayLitExpr*>(expr)) {
-        std::cout << indent << "Array Literal []" << std::endl;
-        for(const auto& elem : e->elements) {
-             printExpr(elem.get(), childIndent);
-        }
-        return;
+/**
+ * Visit a While Loop
+ * Prints the loop structure, including the condition and the loop body.
+ * @param stmt Pointer to the while-statement node
+ */
+void ASTPrinter::visitWhileStmt(WhileStmt* stmt) {
+    std::cout << indent << "[While]" << std::endl;
+    
+    IndentScope scope(*this);
+    std::cout << indent << "Condition:" << std::endl;
+    {
+        IndentScope condScope(*this);
+        accept(stmt->condition.get());
     }
     
-    // Object Instantiation
-    if (auto* e = dynamic_cast<const NewExpr*>(expr)) {
-        std::cout << indent << "New " << e->className.lexeme << std::endl;
-        for(const auto& arg : e->args) {
-             printExpr(arg.get(), childIndent);
-        }
-        return;
+    std::cout << indent << "Body:" << std::endl;
+    {
+        IndentScope bodyScope(*this);
+        for (const auto& st : stmt->body) accept(st.get());
     }
+}
 
-    std::cout << indent << "[Unknown Expr]" << std::endl;
+/**
+ * Visit a Return Statement
+ * Prints the return marker and recursively prints the return value if present.
+ * @param stmt Pointer to the return statement node
+ */
+void ASTPrinter::visitReturnStmt(ReturnStmt* stmt) {
+    std::cout << indent << "[Return]" << std::endl;
+    if (stmt->value) {
+        IndentScope scope(*this);
+        accept(stmt->value.get());
+    }
+}
+
+/**
+ * Visit a Print Statement
+ * Prints the print marker and recursively prints the expression to be printed.
+ * @param stmt Pointer to the print statement node
+ */
+void ASTPrinter::visitPrintStmt(PrintStmt* stmt) {
+    std::cout << indent << "[Print]" << std::endl;
+    IndentScope scope(*this);
+    accept(stmt->expression.get());
+}
+
+/**
+ * Visit an Expression Statement
+ * Prints a generic expression marker and recursively prints the expression.
+ * Used for expressions that stand alone as statements (e.g., function calls).
+ * @param stmt Pointer to the expression statement node
+ */
+void ASTPrinter::visitExpressionStmt(ExpressionStmt* stmt) {
+    std::cout << indent << "[ExprStmt]" << std::endl;
+    IndentScope scope(*this);
+    accept(stmt->expression.get());
+}
+
+/**
+ * Visit a Block Statement
+ * Prints the block marker and iterates through the list of statements within the block.
+ * @param stmt Pointer to the block statement node
+ */
+void ASTPrinter::visitBlockStmt(BlockStmt* stmt) {
+    std::cout << indent << "[Block]" << std::endl;
+    IndentScope scope(*this);
+    for (const auto& s : stmt->statements) {
+        accept(s.get());
+    }
+}
+
+// --- Expression Visitors ---
+
+/**
+ * Visit a Binary Expression
+ * Prints the operator and recursively prints the left and right operands.
+ * @param expr Pointer to the binary expression node
+ */
+void ASTPrinter::visitBinaryExpr(BinaryExpr* expr) {
+    std::cout << indent << "Binary (" << expr->op.lexeme << ")" << std::endl;
+    IndentScope scope(*this);
+    accept(expr->left.get());
+    accept(expr->right.get());
+}
+
+/**
+ * Visit an Assignment Expression
+ * Prints the assignment marker, the target (variable), and the value being assigned.
+ * @param expr Pointer to the assignment expression node
+ */
+void ASTPrinter::visitAssignExpr(AssignExpr* expr) {
+    std::cout << indent << "Assign (=)" << std::endl;
+    IndentScope scope(*this);
+    
+    std::cout << indent << "Target:" << std::endl;
+    {
+        IndentScope targetScope(*this);
+        accept(expr->target.get());
+    }
+    
+    std::cout << indent << "Value:" << std::endl;
+    {
+        IndentScope valScope(*this);
+        accept(expr->value.get());
+    }
+}
+
+/**
+ * Visit a Literal Value
+ * Prints the raw value of the literal token (e.g., number, string, boolean).
+ * @param expr Pointer to the literal expression node
+ */
+void ASTPrinter::visitLiteralExpr(LiteralExpr* expr) {
+    std::cout << indent << "Literal: " << expr->token.lexeme << std::endl;
+}
+
+/**
+ * Visit a Variable Reference
+ * Prints the name of the variable being accessed.
+ * @param expr Pointer to the variable expression node
+ */
+void ASTPrinter::visitVariableExpr(VariableExpr* expr) {
+    std::cout << indent << "Var: " << expr->name.lexeme << std::endl;
+}
+
+/**
+ * Visit a Function/Method Call
+ * Prints the call marker, the callee (function name/object), and the arguments.
+ * @param expr Pointer to the call expression node
+ */
+void ASTPrinter::visitCallExpr(CallExpr* expr) {
+    std::cout << indent << "Call" << std::endl;
+    IndentScope scope(*this);
+    
+    std::cout << indent << "Callee:" << std::endl;
+    {
+        IndentScope calleeScope(*this);
+        accept(expr->callee.get());
+    }
+    
+    std::cout << indent << "Args:" << std::endl;
+    {
+        IndentScope argScope(*this);
+        for (const auto& arg : expr->args) {
+            accept(arg.get());
+        }
+    }
+}
+
+/**
+ * Visit a Property Get Expression
+ * Prints the property name and the object being accessed (e.g., object.property).
+ * @param expr Pointer to the get expression node
+ */
+void ASTPrinter::visitGetExpr(GetExpr* expr) {
+    std::cout << indent << "Get Property: ." << expr->name.lexeme << std::endl;
+    IndentScope scope(*this);
+    accept(expr->object.get());
+}
+
+/**
+ * Visit an Array Access Expression
+ * Prints the array access structure, the array expression, and the index expression.
+ * @param expr Pointer to the array access expression node
+ */
+void ASTPrinter::visitArrayAccessExpr(ArrayAccessExpr* expr) {
+    std::cout << indent << "Array Index []" << std::endl;
+    IndentScope scope(*this);
+    
+    std::cout << indent << "Array:" << std::endl;
+    {
+        IndentScope arrScope(*this);
+        accept(expr->array.get());
+    }
+    
+    std::cout << indent << "Index:" << std::endl;
+    {
+        IndentScope idxScope(*this);
+        accept(expr->index.get());
+    }
+}
+
+/**
+ * Visit an Array Literal
+ * Prints the array definition and recursively prints all elements inside.
+ * @param expr Pointer to the array literal expression node
+ */
+void ASTPrinter::visitArrayLitExpr(ArrayLitExpr* expr) {
+    std::cout << indent << "Array Literal []" << std::endl;
+    IndentScope scope(*this);
+    for(const auto& elem : expr->elements) {
+        accept(elem.get());
+    }
+}
+
+/**
+ * Visit a New Instance Expression
+ * Prints the class instantiation and the constructor arguments.
+ * @param expr Pointer to the new expression node
+ */
+void ASTPrinter::visitNewExpr(NewExpr* expr) {
+    std::cout << indent << "New " << expr->className.lexeme << std::endl;
+    IndentScope scope(*this);
+    for(const auto& arg : expr->args) {
+        accept(arg.get());
+    }
 }

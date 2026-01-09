@@ -1,8 +1,7 @@
 #include "errors.hpp"
 
 /**
- * Print a humorous error message when parsing fails
- * This is a fun easter egg for students using the pseudocode interpreter
+ * Berate the user because they had an error
  */
 void printAtarMessage() {
     std::cout << C_RED << "[SCSA] Your ATAR is cooked, -99999 marks." <<
@@ -29,7 +28,7 @@ std::string ErrorReporter::getErrorLabel(ErrorType type) {
         case ErrorType::Syntax:     return "Syntax Error";
         case ErrorType::Type:       return "Type Error";
         case ErrorType::Runtime:    return "Runtime Error";
-        default:                    return "Error";
+        default:                    return "Unknown Error";
     }
 }
 
@@ -42,7 +41,7 @@ std::string ErrorReporter::getStageLabel() {
         case InterpreterStage::Lexing:   return "Lexing";
         case InterpreterStage::Parsing:  return "Parsing";
         case InterpreterStage::Runtime:  return "Runtime";
-        default:                         return "huh";
+        default:                         return "Unknown";
     }
 }
 
@@ -59,7 +58,7 @@ void ErrorReporter::report(ErrorType type, size_t line, size_t column,
         const std::string& message, const std::string& lineSource) {
     // Print which stage the interpreter is in
     std::string stageLabel = getStageLabel();
-    std::cerr << C_RED << "[Error occurred during stage: '" << stageLabel
+    std::cerr << C_RED << "[An error occurred during stage: '" << stageLabel
         << "']" << std::endl;
 
     // Print error message with location information

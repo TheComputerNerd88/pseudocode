@@ -6,126 +6,286 @@
 
 #include "lexer.hpp"
 
-// Forward declarations
-struct Expr;
-struct Stmt;
+// --- Forward Declarations of Concrete Nodes ---
+
+// Expressions
+struct LiteralExpr;
+struct VariableExpr;
+struct AssignExpr;
+struct BinaryExpr;
+struct CallExpr;
+struct GetExpr;
+struct ArrayAccessExpr;
+struct ArrayLitExpr;
+struct NewExpr;
+
+// Statements
+struct ExpressionStmt;
+struct PrintStmt;
+struct ReturnStmt;
+struct BlockStmt;
+struct IfStmt;
+struct WhileStmt;
+struct FunctionStmt;
+struct ClassStmt;
+
+// --- Visitor Interfaces ---
+
+/**
+ * Expression Visitor Interface
+ * Defines the contract for operations that traverse Expression nodes.
+ */
+struct ExprVisitor {
+    virtual ~ExprVisitor() = default;
+    virtual void visitLiteralExpr(LiteralExpr* expr) = 0;
+    virtual void visitVariableExpr(VariableExpr* expr) = 0;
+    virtual void visitAssignExpr(AssignExpr* expr) = 0;
+    virtual void visitBinaryExpr(BinaryExpr* expr) = 0;
+    virtual void visitCallExpr(CallExpr* expr) = 0;
+    virtual void visitGetExpr(GetExpr* expr) = 0;
+    virtual void visitArrayAccessExpr(ArrayAccessExpr* expr) = 0;
+    virtual void visitArrayLitExpr(ArrayLitExpr* expr) = 0;
+    virtual void visitNewExpr(NewExpr* expr) = 0;
+};
+
+/**
+ * Statement Visitor Interface
+ * Defines the contract for operations that traverse Statement nodes.
+ */
+struct StmtVisitor {
+    virtual ~StmtVisitor() = default;
+    virtual void visitExpressionStmt(ExpressionStmt* stmt) = 0;
+    virtual void visitPrintStmt(PrintStmt* stmt) = 0;
+    virtual void visitReturnStmt(ReturnStmt* stmt) = 0;
+    virtual void visitBlockStmt(BlockStmt* stmt) = 0;
+    virtual void visitIfStmt(IfStmt* stmt) = 0;
+    virtual void visitWhileStmt(WhileStmt* stmt) = 0;
+    virtual void visitFunctionStmt(FunctionStmt* stmt) = 0;
+    virtual void visitClassStmt(ClassStmt* stmt) = 0;
+};
+
+// --- Base Classes ---
+
+/**
+ * Base Expression Class
+ * Abstract base for all expression nodes in the AST.
+ */
+struct Expr {
+    virtual ~Expr() = default;
+    
+    /**
+     * Dispatches the specific visit method on the visitor
+     * @param visitor The visitor executing an operation
+     */
+    virtual void accept(ExprVisitor& visitor) = 0;
+};
+
+/**
+ * Base Statement Class
+ * Abstract base for all statement nodes in the AST.
+ */
+struct Stmt {
+    virtual ~Stmt() = default;
+    
+    /**
+     * Dispatches the specific visit method on the visitor
+     * @param visitor The visitor executing an operation
+     */
+    virtual void accept(StmtVisitor& visitor) = 0;
+};
 
 using ExprPtr = std::unique_ptr<Expr>;
 using StmtPtr = std::unique_ptr<Stmt>;
 
-// --- Expressions ---
+// --- Expressions Implementations ---
 
-struct Expr {
-    virtual ~Expr() = default;
-};
-
+/**
+ * Literal Expression
+ * Represents constant values like numbers, strings, and booleans.
+ */
 struct LiteralExpr : Expr {
-    Token token; // Holds INT, FLOAT, STRING, TRUE, FALSE
+    Token token; 
     LiteralExpr(Token t) : token(t) {}
+    void accept(ExprVisitor& visitor) override { visitor.visitLiteralExpr(this); }
 };
 
+/**
+ * Variable Expression
+ * Represents a reference to a variable name.
+ */
 struct VariableExpr : Expr {
     Token name;
     VariableExpr(Token n) : name(n) {}
+    void accept(ExprVisitor& visitor) override { visitor.visitVariableExpr(this); }
 };
 
+/**
+ * Assignment Expression
+ * Represents assigning a value to a target variable or property.
+ */
 struct AssignExpr : Expr {
-    ExprPtr target; // Supports array/dot assignment: arr[0] = 1
+    ExprPtr target;
     ExprPtr value;
     AssignExpr(ExprPtr t, ExprPtr v) : target(std::move(t)), value(std::move(v)) {}
+    void accept(ExprVisitor& visitor) override { visitor.visitAssignExpr(this); }
 };
 
+/**
+ * Binary Expression
+ * Represents operations with two operands (e.g., a + b, x > y).
+ */
 struct BinaryExpr : Expr {
     ExprPtr left;
     Token op;
     ExprPtr right;
     BinaryExpr(ExprPtr l, Token o, ExprPtr r) 
         : left(std::move(l)), op(o), right(std::move(r)) {}
+    void accept(ExprVisitor& visitor) override { visitor.visitBinaryExpr(this); }
 };
 
+/**
+ * Call Expression
+ * Represents a function or method call with arguments.
+ */
 struct CallExpr : Expr {
     ExprPtr callee;
     std::vector<ExprPtr> args;
     CallExpr(ExprPtr c, std::vector<ExprPtr> a) 
         : callee(std::move(c)), args(std::move(a)) {}
+    void accept(ExprVisitor& visitor) override { visitor.visitCallExpr(this); }
 };
 
+/**
+ * Get Property Expression
+ * Represents accessing a property on an object (e.g., obj.prop).
+ */
 struct GetExpr : Expr {
     ExprPtr object;
     Token name;
     GetExpr(ExprPtr o, Token n) : object(std::move(o)), name(n) {}
+    void accept(ExprVisitor& visitor) override { visitor.visitGetExpr(this); }
 };
 
+/**
+ * Array Access Expression
+ * Represents accessing an array element by index (e.g., arr[i]).
+ */
 struct ArrayAccessExpr : Expr {
     ExprPtr array;
     ExprPtr index;
     ArrayAccessExpr(ExprPtr a, ExprPtr i) : array(std::move(a)), index(std::move(i)) {}
+    void accept(ExprVisitor& visitor) override { visitor.visitArrayAccessExpr(this); }
 };
 
+/**
+ * Array Literal Expression
+ * Represents the creation of a new array with inline elements (e.g., [1, 2, 3]).
+ */
 struct ArrayLitExpr : Expr {
     std::vector<ExprPtr> elements;
     ArrayLitExpr(std::vector<ExprPtr> e) : elements(std::move(e)) {}
+    void accept(ExprVisitor& visitor) override { visitor.visitArrayLitExpr(this); }
 };
 
+/**
+ * New Instance Expression
+ * Represents the instantiation of a class.
+ */
 struct NewExpr : Expr {
     Token className;
     std::vector<ExprPtr> args;
     NewExpr(Token c, std::vector<ExprPtr> a) : className(c), args(std::move(a)) {}
+    void accept(ExprVisitor& visitor) override { visitor.visitNewExpr(this); }
 };
 
-// --- Statements ---
+// --- Statements Implementations ---
 
-struct Stmt {
-    virtual ~Stmt() = default;
-};
-
+/**
+ * Expression Statement
+ * A statement that evaluates an expression (e.g., function call) effectively discarding the result.
+ */
 struct ExpressionStmt : Stmt {
     ExprPtr expression;
     ExpressionStmt(ExprPtr e) : expression(std::move(e)) {}
+    void accept(StmtVisitor& visitor) override { visitor.visitExpressionStmt(this); }
 };
 
+/**
+ * Print Statement
+ * Evaluates an expression and prints the result to standard output.
+ */
 struct PrintStmt : Stmt {
     ExprPtr expression;
     PrintStmt(ExprPtr e) : expression(std::move(e)) {}
+    void accept(StmtVisitor& visitor) override { visitor.visitPrintStmt(this); }
 };
 
+/**
+ * Return Statement
+ * Exits the current function, optionally returning a value.
+ */
 struct ReturnStmt : Stmt {
     ExprPtr value;
     ReturnStmt(ExprPtr v) : value(std::move(v)) {}
+    void accept(StmtVisitor& visitor) override { visitor.visitReturnStmt(this); }
 };
 
+/**
+ * Block Statement
+ * Represents a scope containing a sequence of statements enclosed in braces.
+ */
 struct BlockStmt : Stmt {
     std::vector<StmtPtr> statements;
     BlockStmt(std::vector<StmtPtr> s) : statements(std::move(s)) {}
+    void accept(StmtVisitor& visitor) override { visitor.visitBlockStmt(this); }
 };
 
+/**
+ * If Statement
+ * Conditionally executes a branch of code based on a boolean expression.
+ */
 struct IfStmt : Stmt {
     ExprPtr condition;
     std::vector<StmtPtr> thenBranch;
-    std::vector<StmtPtr> elseBranch; // Empty if no else
+    std::vector<StmtPtr> elseBranch; 
     IfStmt(ExprPtr c, std::vector<StmtPtr> t, std::vector<StmtPtr> e)
         : condition(std::move(c)), thenBranch(std::move(t)), elseBranch(std::move(e)) {}
+    void accept(StmtVisitor& visitor) override { visitor.visitIfStmt(this); }
 };
 
+/**
+ * While Statement
+ * Repeats a body of code while a condition remains true.
+ */
 struct WhileStmt : Stmt {
     ExprPtr condition;
     std::vector<StmtPtr> body;
     WhileStmt(ExprPtr c, std::vector<StmtPtr> b) : condition(std::move(c)), body(std::move(b)) {}
+    void accept(StmtVisitor& visitor) override { visitor.visitWhileStmt(this); }
 };
 
+/**
+ * Function Declaration
+ * Defines a new reusable function with a name, parameters, and a body.
+ */
 struct FunctionStmt : Stmt {
     Token name;
     std::vector<Token> params;
     std::vector<StmtPtr> body;
     FunctionStmt(Token n, std::vector<Token> p, std::vector<StmtPtr> b)
         : name(n), params(p), body(std::move(b)) {}
+    void accept(StmtVisitor& visitor) override { visitor.visitFunctionStmt(this); }
 };
 
+/**
+ * Class Declaration
+ * Defines a new class with a name, an optional superclass, and methods.
+ */
 struct ClassStmt : Stmt {
     Token name;
-    Token superclass; // Optional, Type=EOF if none
-    std::vector<StmtPtr> methods; // FunctionStmts
-    // Note: Attributes could be stored here too, simplifying to just Stmts for now
+    Token superclass;
+    std::vector<StmtPtr> methods;
     ClassStmt(Token n, Token s, std::vector<StmtPtr> m)
         : name(n), superclass(s), methods(std::move(m)) {}
+    void accept(StmtVisitor& visitor) override { visitor.visitClassStmt(this); }
 };

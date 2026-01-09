@@ -1,45 +1,73 @@
 #pragma once
 
-#include <iostream>
 #include <string>
 #include <vector>
-#include "parser.hpp" // or wherever your structs are defined
+#include "ast.hpp"
 
 /**
- * ASTPrinter - Outputs an Abstract Syntax Tree in human-readable tree format
- * 
- * Recursively walks the AST and prints each node with proper indentation,
- * making it easy to visualize the structure and relationships between nodes.
- * Useful for debugging parser output and understanding program structure.
+ * ASTPrinter - Debugging Tool
+ * Outputs an Abstract Syntax Tree in a human-readable, indented tree format.
+ * Implements the Visitor pattern to traverse AST nodes without dynamic_cast.
  */
-class ASTPrinter {
+class ASTPrinter : public ExprVisitor, public StmtVisitor {
 public:
     /**
-     * Entry point for printing
-     * Outputs the entire AST starting from a list of top-level statements
-     * @param statements Vector of statement nodes to print
+     * Entry point for printing the AST.
+     * @param statements The vector of top-level statements to print
      */
     void print(const std::vector<StmtPtr>& statements);
 
+    // --- ExprVisitor Implementation ---
+    void visitLiteralExpr(LiteralExpr* expr) override;
+    void visitVariableExpr(VariableExpr* expr) override;
+    void visitAssignExpr(AssignExpr* expr) override;
+    void visitBinaryExpr(BinaryExpr* expr) override;
+    void visitCallExpr(CallExpr* expr) override;
+    void visitGetExpr(GetExpr* expr) override;
+    void visitArrayAccessExpr(ArrayAccessExpr* expr) override;
+    void visitArrayLitExpr(ArrayLitExpr* expr) override;
+    void visitNewExpr(NewExpr* expr) override;
+
+    // --- StmtVisitor Implementation ---
+    void visitExpressionStmt(ExpressionStmt* stmt) override;
+    void visitPrintStmt(PrintStmt* stmt) override;
+    void visitReturnStmt(ReturnStmt* stmt) override;
+    void visitBlockStmt(BlockStmt* stmt) override;
+    void visitIfStmt(IfStmt* stmt) override;
+    void visitWhileStmt(WhileStmt* stmt) override;
+    void visitFunctionStmt(FunctionStmt* stmt) override;
+    void visitClassStmt(ClassStmt* stmt) override;
+
 private:
-    /**
-     * Recursively print a statement node with indentation
-     * @param stmt Pointer to statement node to print
-     * @param indent Current indentation prefix
-     */
-    void printStmt(const Stmt* stmt, std::string indent);
-    
-    /**
-     * Recursively print an expression node with indentation
-     * @param expr Pointer to expression node to print
-     * @param indent Current indentation prefix
-     */
-    void printExpr(const Expr* expr, std::string indent);
+    std::string indent = ""; // Holds the current indentation string
 
     /**
-     * Helper to increase indentation level for nested nodes
-     * @param indent Current indentation string
-     * @return New indentation string with additional indent level
+     * Helper to safely trigger the visitor mechanism for expressions
+     * @param expr The expression to visit
      */
-    std::string increaseIndent(std::string indent);
+    void accept(Expr* expr);
+
+    /**
+     * Helper to safely trigger the visitor mechanism for statements
+     * @param stmt The statement to visit
+     */
+    void accept(Stmt* stmt);
+
+    /**
+     * RAII Helper Scope
+     * Automatically increases visual indentation on construction
+     * and decreases it on destruction to maintain tree hierarchy.
+     */
+    struct IndentScope {
+        ASTPrinter& printer;
+        std::string oldIndent;
+        
+        IndentScope(ASTPrinter& p) : printer(p), oldIndent(p.indent) {
+            p.indent += "  | ";
+        }
+        
+        ~IndentScope() {
+            printer.indent = oldIndent;
+        }
+    };
 };

@@ -10,7 +10,7 @@
 enum class ErrorType {
     Syntax,  // Syntax errors (invalid token sequences)
     Type,    // Type errors (type mismatches)
-    Runtime, // Runtime errors (errors during execuction)
+    Runtime, // Runtime errors (errors during execution)
 };
 
 // ANSI color codes for terminal output

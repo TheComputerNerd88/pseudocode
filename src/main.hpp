@@ -7,15 +7,15 @@
 #include <vector>
 #include <iomanip>
 
-#include "lexer.hpp"
+#include "interpreter.hpp"
 #include "parser.hpp"
-#include "tree-walker.hpp"
+#include "lexer.hpp"
 #include "errors.hpp"
 
 /**
  * Main Pseudocode interpreter class
  * Provides both file execution and interactive REPL modes
- * Currently supports lexical analysis and token output
+ * Exposes an API for running pseudocode programs
  */
 class Pseudocode {
 public:
@@ -46,3 +46,15 @@ private:
      */
     static void printTokenTable(const std::vector<Token>& tokens);
 };
+
+/**
+ * Entry point for the Pseudocode interpreter
+ * 
+ */
+int main(int argc, char* argv[]) {
+    if (argc == 1) {
+        return Pseudocode::runRepl();
+    }
+
+    return Pseudocode::runFile(argv[1]);
+}
