@@ -4,7 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "interpreter.hpp"
+// Forward declaration to break circular dependency
+enum InterpreterStage { Lexing, Parsing, Runtime };
 
 // Every type of error we'll need
 enum class ErrorType {
@@ -29,7 +30,7 @@ void printAtarMessage();
  * Provides context about where the error occurred in the source code
  */
 class ErrorReporter {
-  private:
+private:
     // Reference to current interpreter stage
     InterpreterStage &stage;
     // Current source file being processed
@@ -54,7 +55,7 @@ class ErrorReporter {
      */
     std::string getSourceLine(size_t lineNum);
 
-  public:
+public:
     /**
      * Construct error reporter with reference to current stage, filename, and source code
      * @param stageRef Reference to the interpreter stage

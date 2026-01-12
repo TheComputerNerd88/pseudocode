@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -15,25 +17,30 @@
 /**
  * Main Pseudocode interpreter class
  * Provides both file execution and interactive REPL modes
- * Exposes an API for running pseudocode programs
+ * Exposes a public API for running pseudocode programs
  */
 class Pseudocode {
-  public:
+public:
     /**
      * Execute pseudocode from a file
      * @param path Path to the pseudocode file to run
      * @return 0 on success, 1 on error
      */
-    static int runFile(const std::string &path);
+    int runFile(const std::string &path);
 
     /**
      * Run an interactive REPL (Read-Eval-Print-Loop)
      * Allows users to type pseudocode lines and see tokenization
      * @return Always returns 0
      */
-    static int runRepl();
+    int runRepl();
 
-  private:
+    /**
+     * Optional debug modes for debugging tokenization and parsing
+     */
+    bool debugTokens = false; // Print token table after Lexing
+    bool debugParse  = false; // Print AST after Parsing
+private:
     /**
      * Read entire file contents into a string
      * @param path Path to the file to read
@@ -48,14 +55,45 @@ class Pseudocode {
     static void printTokenTable(const std::vector<Token> &tokens);
 };
 
+void help() {
+    std::cout << "Usage: scsa [--debug-tokens] [--debug-parse] [script.scsa]" << std::endl;
+    std::cout << "Options:" << std::endl;
+    std::cout << "  --debug-tokens   Print token table after lexing" << std::endl;
+    std::cout << "  --debug-parse    Print AST after parsing" << std::endl;
+    std::cout << "If no script is provided, an interactive REPL is started." << std::endl;
+}
+
 /**
  * Entry point for the Pseudocode interpreter
  *
  */
 int main(int argc, char *argv[]) {
-    if (argc == 1) {
-        return Pseudocode::runRepl();
+    Pseudocode pseudocode;
+
+    if (argc > 1 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h")) {
+        help();
+        return 0;
     }
 
-    return Pseudocode::runFile(argv[1]);
+    // Parse optional arguments
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--debug-tokens") {
+            pseudocode.debugTokens = true;
+        } else if (arg == "--debug-parse") {
+            pseudocode.debugParse = true;
+        } else {
+            // If file ends in .scsa then treat as script
+            if (arg.size() < 5 || arg.substr(arg.size() - 5) != ".scsa") {
+                help();
+                return 1;
+            } else {
+                return pseudocode.runFile(arg);
+            }
+        }
+    }
+
+    if (argc == 1) {
+        return pseudocode.runRepl();
+    }
 }

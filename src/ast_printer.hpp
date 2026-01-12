@@ -10,7 +10,7 @@
  * Implements the Visitor pattern to traverse AST nodes without dynamic_cast.
  */
 class ASTPrinter : public ExprVisitor, public StmtVisitor {
-  public:
+public:
     /**
      * Entry point for printing the AST.
      * @param statements The vector of top-level statements to print
@@ -39,7 +39,7 @@ class ASTPrinter : public ExprVisitor, public StmtVisitor {
     void visitClassStmt(ClassStmt *stmt) override;
     void visitForInStmt(ForInStmt *stmt) override;
 
-  private:
+private:
     std::string indent = ""; // Holds the current indentation string
 
     /**

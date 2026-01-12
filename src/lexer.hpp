@@ -172,7 +172,7 @@ struct Token {
 // It handles keywords, identifiers, literals, operators, and comments.
 
 class Lexer {
-  private:
+private:
     // Source code being tokenized
     std::string source;
     // Output tokens collected during scanning
@@ -195,7 +195,7 @@ class Lexer {
     // Error reporter for communicating issues
     ErrorReporter reporter;
 
-  public:
+public:
     /**
      * Construct a lexer for the given source code
      * @param src The source code string to tokenize
@@ -209,7 +209,7 @@ class Lexer {
      */
     std::vector<Token> scanTokens();
 
-  private:
+private:
     /**
      * Check if we're at the end of source
      */

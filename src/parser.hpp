@@ -13,7 +13,7 @@
  * while keeping statement parsing straightforward.
  */
 class Parser {
-  public:
+public:
     /**
      * Parser Constructor
      * @param tokens Vector of tokens from the lexer
@@ -29,7 +29,7 @@ class Parser {
      */
     std::vector<StmtPtr> parse();
 
-  private:
+private:
     const std::vector<Token> &tokens;
     const std::string &source;
     ErrorReporter &reporter;
@@ -42,14 +42,14 @@ class Parser {
      * Higher numbers bind tighter (higher precedence).
      */
     enum Precedence {
-        PREC_NONE,
-        PREC_ASSIGNMENT, // = (lowest precedence)
-        PREC_EQUALITY,   // ==
-        PREC_COMPARISON, // < > <= >=
-        PREC_TERM,       // + -
-        PREC_FACTOR,     // * /
-        PREC_CALL,       // . () []
-        PREC_PRIMARY     // (highest precedence)
+        PREC_NONE = 0,
+        PREC_ASSIGNMENT = 10, // =
+        PREC_EQUALITY = 20,   // ==
+        PREC_COMPARISON = 30, // < > <= >=
+        PREC_TERM = 40,       // + -
+        PREC_FACTOR = 50,     // * /
+        PREC_CALL = 60,       // . () []
+        PREC_PRIMARY = 70     // (highest)
     };
 
     // --- Token Navigation ---
