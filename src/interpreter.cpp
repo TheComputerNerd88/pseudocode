@@ -333,7 +333,7 @@ public:
     }
 
     int arity() override {
-        return declaration->params.size() || 0;
+        return declaration->params.size();
     }
 
     RuntimeValue call(Interpreter &interpreter, std::vector<RuntimeValue> arguments) override {

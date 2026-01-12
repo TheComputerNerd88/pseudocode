@@ -42,14 +42,14 @@ private:
      * Higher numbers bind tighter (higher precedence).
      */
     enum Precedence {
-        PREC_NONE = 0,
+        PREC_NONE       = 0,
         PREC_ASSIGNMENT = 10, // =
-        PREC_EQUALITY = 20,   // ==
+        PREC_EQUALITY   = 20, // ==
         PREC_COMPARISON = 30, // < > <= >=
-        PREC_TERM = 40,       // + -
-        PREC_FACTOR = 50,     // * /
-        PREC_CALL = 60,       // . () []
-        PREC_PRIMARY = 70     // (highest)
+        PREC_TERM       = 40, // + -
+        PREC_FACTOR     = 50, // * /
+        PREC_CALL       = 60, // . () []
+        PREC_PRIMARY    = 70  // (highest)
     };
 
     // --- Token Navigation ---
