@@ -517,23 +517,23 @@ StmtPtr Parser::whileStatement() {
  */
 StmtPtr Parser::forInStatement() {
     traceEnter("forInStatement");
-    
+
     // Get the loop variable
     Token variable = consume(TOK_IDENTIFIER, "Expected variable name after FOR.");
-    
+
     // Expect IN keyword
     consume(TOK_IN, "Expected 'IN' after for loop variable.");
-    
+
     // Parse the iterable expression
     ExprPtr iterable = parseExpression(PREC_NONE);
-    
+
     // Parse the loop body
     std::vector<StmtPtr> body = block();
-    
+
     // Expect END FOR
     consume(TOK_END, "Expected 'END' after for loop.");
     consume(TOK_FOR, "Expected 'FOR' after 'END'.");
-    
+
     traceExit("forInStatement");
     return std::make_unique<ForInStmt>(variable, std::move(iterable), std::move(body));
 }
