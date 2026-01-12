@@ -14,6 +14,11 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
+
 /**
  * Main Pseudocode interpreter class
  * Provides both file execution and interactive REPL modes
@@ -68,6 +73,19 @@ void help() {
  *
  */
 int main(int argc, char *argv[]) {
+
+#ifdef _WIN32
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD consoleMode;
+    GetConsoleMode(hConsole, &consoleMode);
+    consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hConsole, consoleMode); // Enable ANSI colours
+
+    // Set input/output code page to UTF-8
+    SetConsoleCP(CP_UTF8);
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     Pseudocode pseudocode;
 
     if (argc > 1 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h")) {
